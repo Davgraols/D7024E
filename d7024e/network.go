@@ -1,6 +1,9 @@
 package d7024e
 
+// Network ADSASD
 type Network struct {
+	Port        string
+	BootstrapIP string
 }
 
 func Listen(ip string, port int) {
