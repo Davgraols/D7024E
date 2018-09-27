@@ -39,6 +39,7 @@ func Listen(ip string, port int) {
 		switch rpc.RpcType {
 		case 1:
 			log.Printf("Received PING from %s\n", hex.EncodeToString(rpc.SenderId))
+
 		default:
 			log.Printf("Received something else from addr: %s", addr)
 		}
@@ -52,6 +53,7 @@ func (network *Network) TestPing() {
 	network.SendPingMessage(&contact)
 }
 
+// SendPingMessage ASDASD
 func (network *Network) SendPingMessage(contact *Contact) {
 	remoteAddr, err := net.ResolveUDPAddr("udp", network.BootstrapIP+":"+network.Port)
 	CheckError(err)
