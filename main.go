@@ -8,7 +8,8 @@ import (
 	"net"
 	"time"
 
-	kad "github.com/davgraols/D7024E-GR8/d7024e"
+	kad "D7024E-GR8/d7024e"
+
 	"github.com/golang/protobuf/proto"
 )
 
@@ -23,14 +24,14 @@ var (
 // run client with: go run main.go RPC.pb.go-p 4000 -m client
 func main() {
 
-	flag.Parse()
-	switch *mode {
-	case "server":
-		RunServer()
-	case "client":
-		RunClient()
-	}
-
+	//flag.Parse()
+	//switch *mode {
+	//case "server":
+	//	RunServer()
+	//case "client":
+	//	RunClient()
+	//}
+	kad.NewRoutingTable()
 	//id := kad.NewRandomKademliaID()
 	//println(id.String(), hex.EncodeToString(id.ToBytes()))
 
