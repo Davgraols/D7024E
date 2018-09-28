@@ -1,6 +1,8 @@
 package d7024e
 
-import "fmt"
+import (
+	"fmt"
+)
 
 var (
 	MyId          = NewRandomKademliaID()
@@ -27,6 +29,10 @@ func Init(bootstrap bool) {
 		switch msg.RpcType {
 		case 1:
 			fmt.Println("PING", msg.SenderIp)
+			contact := NewContact(IdFromBytes(msg.SenderId), string(msg.SenderIp))
+			go network.SendPingResponseMessage(&contact)
+		case 2:
+			fmt.Println("PING_PONG", msg.SenderIp)
 		default:
 			fmt.Println("default")
 		}
