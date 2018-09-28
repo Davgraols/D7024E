@@ -33,6 +33,22 @@ func NewRandomKademliaID() *KademliaID {
 	return &newKademliaID
 }
 
+func NewRandomHash(data string) *KademliaID {
+	letterBytes := data
+	newKademliaID := KademliaID{}
+	b := make([]byte, 20)
+	for i := range b {
+		b[i] = letterBytes[rand.Int63()%int64(len(letterBytes))]
+	}
+	for i := 0; i < IDLength; i++ {
+		newKademliaID[i] = b[i]
+	}
+	return &newKademliaID
+	//fmt.Println(string(&newKademliaID))
+	//fmt.Println(len(string(b)))
+
+}
+
 // Less returns true if kademliaID < otherKademliaID (bitwise)
 func (kademliaID KademliaID) Less(otherKademliaID *KademliaID) bool {
 	for i := 0; i < IDLength; i++ {

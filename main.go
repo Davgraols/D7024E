@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 
-	kad "github.com/davgraols/D7024E-GR8/d7024e"
+	kad "D7024E-GR8/d7024e"
 )
 
 var (
@@ -15,6 +15,8 @@ var (
 // run server with: go run main.go RPC.pb.go
 // run client with: go run main.go RPC.pb.go -m client
 func main() {
+
+	kad.NewRandomHash("erikisawesome")
 
 	flag.Parse()
 	switch *mode {

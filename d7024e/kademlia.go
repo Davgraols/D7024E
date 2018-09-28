@@ -1,6 +1,8 @@
 package d7024e
 
 type Kademlia struct {
+	routingTB RoutingTable
+	file      []byte
 }
 
 func (kademlia *Kademlia) LookupContact(target *Contact) {
