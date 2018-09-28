@@ -20,7 +20,7 @@ message RPC {
       }
 
     RPCType    rpc_type = 1;
-    bytes      ser = 2;
+    int32      ser = 2;
     bytes      sender_id = 3;
     bytes      value = 4;
     NodeType   node_type = 5;

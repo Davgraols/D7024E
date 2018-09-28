@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"strconv"
-	"time"
 
 	"github.com/golang/protobuf/proto"
 )
@@ -20,7 +19,6 @@ type Network struct {
 const messageSize int = 1024
 
 func Listen(ip string, port int) {
-	fmt.Println(strconv.Itoa(port))
 	serverAddr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(port))
 	CheckError(err)
 
@@ -35,24 +33,9 @@ func Listen(ip string, port int) {
 		n, addr, err := serverConn.ReadFromUDP(buf)
 		rpc := &RPC{}
 		err = proto.Unmarshal(buf[0:n], rpc)
-
 		rpc.SenderIp = addr.String()
-		//fmt.Println(rpc.SenderIp)
+
 		Requests <- *rpc
-		/*
-			switch rpc.RpcType {
-			case 1:
-				//log.Printf("Received PING from %s\n", hex.EncodeToString(rpc.SenderId))
-				Requests <- "PING"
-				/*contact := NewContact(IdFromBytes(rpc.SenderId), addr.String())
-				fmt.Println(contact.String())
-				// add contact to routing table
-
-			default:
-				Requests <- "OTHER"
-				log.Printf("Received something else from addr: %s", addr)
-			}*/
-
 		CheckError(err)
 	}
 }
@@ -75,22 +58,21 @@ func (network *Network) SendPingMessage(contact *Contact) {
 
 	defer conn.Close()
 
-	i := 1
-	for {
-		rpc := CreatePingRPC()
-		data, err := proto.Marshal(rpc)
-		if err != nil {
-			log.Fatal("marshalling error: ", err)
-		}
-		buf := []byte(data)
-		_, err = conn.Write(buf)
-		fmt.Printf("sending PING with id %s\n", hex.EncodeToString(rpc.SenderId))
-		if err != nil {
-			log.Println(err)
-		}
+	rpc := RPC{
+		RpcType:  1,
+		Ser:      1337,
+		SenderId: MyId.ToBytes(),
+	}
 
-		i++
-		time.Sleep(time.Second * 1)
+	data, err := proto.Marshal(&rpc)
+	if err != nil {
+		log.Fatal("marshalling error: ", err)
+	}
+	buf := []byte(data)
+	_, err = conn.Write(buf)
+	fmt.Printf("sending PING with id %s\n", hex.EncodeToString(rpc.SenderId))
+	if err != nil {
+		log.Println(err)
 	}
 }
 
@@ -114,15 +96,4 @@ func CheckError(err error) {
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
-}
-
-func CreatePingRPC() *RPC {
-	ser := []byte{112, 64, 128}
-	sender_id := NewRandomKademliaID().ToBytes()
-	rpc := RPC{
-		RpcType:  1,
-		Ser:      ser,
-		SenderId: sender_id,
-	}
-	return &rpc
 }
