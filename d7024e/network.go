@@ -85,6 +85,10 @@ func (network *Network) SendPingMessage(contact *Contact) {
 	}
 }
 
+func (network *Network) SendPingResponseMessage(contact *Contact) {
+
+}
+
 func (network *Network) SendFindContactMessage(contact *Contact) {
 	// TODO
 }
