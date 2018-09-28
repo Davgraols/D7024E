@@ -19,13 +19,8 @@ func main() {
 	flag.Parse()
 	switch *mode {
 	case "server":
-		go kad.Listen("127.0.0.1", 4000)
+		kad.Init(true)
 	case "client":
-		go network.TestPing()
-		go network.TestPing()
-		go kad.Listen("127.0.0.1", 4001)
+		kad.Init(false)
 	}
-
-	kad.Init()
-
 }
