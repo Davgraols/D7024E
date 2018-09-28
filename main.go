@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	mode    = flag.String("m", "server", "mode: client or server")
-	network = kad.Network{Port: "4000", BootstrapIP: "127.0.0.1"}
+	mode     = flag.String("m", "server", "mode: client or server")
+	network  = kad.Network{Port: "4000", BootstrapIP: "127.0.0.1"}
+	Requests = make(chan string)
 )
 
 // run server with: go run main.go RPC.pb.go
@@ -18,8 +19,13 @@ func main() {
 	flag.Parse()
 	switch *mode {
 	case "server":
-		kad.Listen("127.0.0.1", 4000)
+		go kad.Listen("127.0.0.1", 4000)
 	case "client":
-		network.TestPing()
+		go network.TestPing()
+		go network.TestPing()
+		go kad.Listen("127.0.0.1", 4001)
 	}
+
+	kad.Init()
+
 }

@@ -25,11 +25,12 @@ message RPC {
     bytes      value = 4;
     NodeType   node_type = 5;
     bytes      lookup_id = 6;
+    string     sender_ip = 7;
 
     message knearest {
         bytes   id = 1;
         bytes   ip = 2;
     }
 
-    repeated knearest klist = 7;
+    repeated knearest klist = 8;
 }
