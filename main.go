@@ -16,6 +16,8 @@ var (
 // run client with: go run main.go RPC.pb.go -m client
 func main() {
 
+	kad.NewRandomHash("erikisawesome")
+
 	flag.Parse()
 	switch *mode {
 	case "server":
