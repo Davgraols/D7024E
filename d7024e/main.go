@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"strings"
 )
 
 var (
@@ -44,11 +45,15 @@ func run(bootstrap bool) {
 		msg := <-Requests
 		switch msg.RpcType {
 		case 1:
-			fmt.Println("PING", msg.SenderIp)
-			contact := NewContact(IdFromBytes(msg.SenderId), msg.SenderIp)
+			fmt.Println("Received PING from: ", msg.SenderIp)
+			senderIp := strings.Split(msg.SenderIp, ":")[0]
+			contact := NewContact(IdFromBytes(msg.SenderId), senderIp)
 			go network.SendPingResponseMessage(&contact)
 		case 2:
-			fmt.Println("PONG", msg.SenderIp)
+			fmt.Println("Received PONG from: ", msg.SenderIp)
+			//senderIp := strings.Split(msg.SenderIp, ":")[0]
+			//contact := NewContact(IdFromBytes(msg.SenderId), senderIp)
+			//go network.SendPingMessage(&contact)
 		default:
 			fmt.Println("default")
 		}

@@ -19,18 +19,15 @@ type Network struct {
 const messageSize int = 1024
 
 func Listen(ip string, port int) {
-	serverAddr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(port))
-	CheckError(err)
 
-	serverConn, err := net.ListenUDP("udp", serverAddr)
+	pc, err := net.ListenPacket("udp", ":"+strconv.Itoa(port))
 	CheckError(err)
-	defer serverConn.Close()
+	defer pc.Close()
 
 	buf := make([]byte, messageSize)
 
-	log.Println("Listening on port " + strconv.Itoa(port))
 	for {
-		n, addr, err := serverConn.ReadFromUDP(buf)
+		n, addr, err := pc.ReadFrom(buf)
 		rpc := &RPC{}
 		err = proto.Unmarshal(buf[0:n], rpc)
 		rpc.SenderIp = addr.String()
@@ -42,16 +39,6 @@ func Listen(ip string, port int) {
 
 // SendPingMessage ASDASD
 func (network *Network) SendPingMessage(contact *Contact) {
-	remoteAddr, err := net.ResolveUDPAddr("udp", network.BootstrapIP+":"+network.Port)
-	CheckError(err)
-
-	localAddr, err := net.ResolveUDPAddr("udp", network.BootstrapIP+":0")
-	CheckError(err)
-
-	conn, err := net.DialUDP("udp", localAddr, remoteAddr)
-	CheckError(err)
-
-	defer conn.Close()
 
 	rpc := RPC{
 		RpcType:  1,
@@ -63,9 +50,16 @@ func (network *Network) SendPingMessage(contact *Contact) {
 	if err != nil {
 		log.Fatal("marshalling error: ", err)
 	}
+
 	buf := []byte(data)
-	_, err = conn.Write(buf)
-	fmt.Printf("sending PING with id %s\n", hex.EncodeToString(rpc.SenderId))
+
+	conn, err := net.Dial("udp", contact.Address+":4000")
+	CheckError(err)
+	defer conn.Close()
+
+	conn.Write(buf)
+	fmt.Printf("sending PING with id %s to %s", hex.EncodeToString(rpc.SenderId), contact.Address)
+
 	if err != nil {
 		log.Println(err)
 	}
@@ -73,16 +67,6 @@ func (network *Network) SendPingMessage(contact *Contact) {
 }
 
 func (network *Network) SendPingResponseMessage(contact *Contact) {
-	remoteAddr, err := net.ResolveUDPAddr("udp", network.BootstrapIP+":"+network.Port)
-	CheckError(err)
-
-	localAddr, err := net.ResolveUDPAddr("udp", network.BootstrapIP+":0")
-	CheckError(err)
-
-	conn, err := net.DialUDP("udp", localAddr, remoteAddr)
-	CheckError(err)
-
-	defer conn.Close()
 
 	rpc := RPC{
 		RpcType:  2,
@@ -95,11 +79,13 @@ func (network *Network) SendPingResponseMessage(contact *Contact) {
 		log.Fatal("marshalling error: ", err)
 	}
 	buf := []byte(data)
-	_, err = conn.Write(buf)
-	fmt.Printf("sending PONG with id %s\n", hex.EncodeToString(rpc.SenderId))
-	if err != nil {
-		log.Println(err)
-	}
+
+	conn, err := net.Dial("udp", contact.Address+":4000")
+	CheckError(err)
+	defer conn.Close()
+
+	conn.Write(buf)
+	fmt.Printf("sending PONG with id %s to %s", hex.EncodeToString(rpc.SenderId), contact.Address)
 
 }
 
