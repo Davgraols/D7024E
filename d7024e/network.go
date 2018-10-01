@@ -96,7 +96,7 @@ func (network *Network) SendPingResponseMessage(contact *Contact) {
 	}
 	buf := []byte(data)
 	_, err = conn.Write(buf)
-	fmt.Printf("sending PING with id %s\n", hex.EncodeToString(rpc.SenderId))
+	fmt.Printf("sending PONG with id %s\n", hex.EncodeToString(rpc.SenderId))
 	if err != nil {
 		log.Println(err)
 	}
