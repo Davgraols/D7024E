@@ -1,0 +1,16 @@
+version: "3"
+services:
+  kademliaBootstrap:
+    image: kadlab:latest
+    command: ["./d7024e"]
+    #networks:
+    #    - kademlia_network
+
+  kademliaNodes:
+    image: kadlab:latest
+    command: ["./d7024e", "-m", "client"]
+    #networks:
+    #    - kademlia_network
+
+#networks:
+#  kademlia_network:

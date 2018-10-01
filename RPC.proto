@@ -1,0 +1,36 @@
+syntax = "proto3";
+package main;
+
+message RPC {
+
+    enum NodeType {
+        OWNER = 0;
+        NODE = 1; 
+    }
+
+    enum RPCType {
+        PING_REQ = 0;
+        PING_RES = 1;
+        STORE_REQ = 2;
+        STORE_RES = 3;
+        FIND_NODE_REQ = 4;
+        FIND_NODE_RES = 5;
+        FIND_VALUE_REQ = 6;
+        FIND_VALUE_RES = 7;
+      }
+
+    RPCType    rpc_type = 1;
+    int32      ser = 2;
+    bytes      sender_id = 3;
+    bytes      value = 4;
+    NodeType   node_type = 5;
+    bytes      lookup_id = 6;
+    string     sender_ip = 7;
+
+    message knearest {
+        bytes   id = 1;
+        bytes   ip = 2;
+    }
+
+    repeated knearest klist = 8;
+}
