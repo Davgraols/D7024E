@@ -74,9 +74,37 @@ func (network *Network) SendPingMessage(contact *Contact) {
 	if err != nil {
 		log.Println(err)
 	}
+
 }
 
 func (network *Network) SendPingResponseMessage(contact *Contact) {
+	remoteAddr, err := net.ResolveUDPAddr("udp", network.BootstrapIP+":"+network.Port)
+	CheckError(err)
+
+	localAddr, err := net.ResolveUDPAddr("udp", network.BootstrapIP+":0")
+	CheckError(err)
+
+	conn, err := net.DialUDP("udp", localAddr, remoteAddr)
+	CheckError(err)
+
+	defer conn.Close()
+
+	rpc := RPC{
+		RpcType:  2,
+		Ser:      1337,
+		SenderId: MyId.ToBytes(),
+	}
+
+	data, err := proto.Marshal(&rpc)
+	if err != nil {
+		log.Fatal("marshalling error: ", err)
+	}
+	buf := []byte(data)
+	_, err = conn.Write(buf)
+	fmt.Printf("sending PING with id %s\n", hex.EncodeToString(rpc.SenderId))
+	if err != nil {
+		log.Println(err)
+	}
 
 }
 
