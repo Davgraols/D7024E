@@ -1,0 +1,16 @@
+version: "3"
+services:
+  kademliaBootstrap:
+    image: kadlab:latest
+    command: ["/usr/local/go/bin/go", "run", "."]
+    networks:
+        - kademlia_network
+
+  kademliaNodes:
+    image: kadlab:latest
+    command: ["/usr/local/go/bin/go", "run", ".", "-m", "client"]
+    networks:
+        - kademlia_network
+
+networks:
+  kademlia_network:
