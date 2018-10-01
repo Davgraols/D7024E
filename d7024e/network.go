@@ -41,7 +41,7 @@ func Listen(ip string, port int) {
 func (network *Network) SendPingMessage(contact *Contact) {
 
 	rpc := RPC{
-		RpcType:  1,
+		RpcType:  0,
 		Ser:      1337,
 		SenderId: MyId.ToBytes(),
 	}
@@ -69,7 +69,7 @@ func (network *Network) SendPingMessage(contact *Contact) {
 func (network *Network) SendPingResponseMessage(contact *Contact) {
 
 	rpc := RPC{
-		RpcType:  2,
+		RpcType:  1,
 		Ser:      1337,
 		SenderId: MyId.ToBytes(),
 	}
