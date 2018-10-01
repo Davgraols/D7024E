@@ -40,11 +40,6 @@ func Listen(ip string, port int) {
 	}
 }
 
-func (network *Network) TestPing() {
-	contact := NewContact(NewRandomKademliaID(), "127.0.0.1")
-	network.SendPingMessage(&contact)
-}
-
 // SendPingMessage ASDASD
 func (network *Network) SendPingMessage(contact *Contact) {
 	remoteAddr, err := net.ResolveUDPAddr("udp", network.BootstrapIP+":"+network.Port)

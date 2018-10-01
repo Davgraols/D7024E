@@ -2,13 +2,13 @@ version: "3"
 services:
   kademliaBootstrap:
     image: kadlab:latest
-    command: ["/usr/local/go/bin/go", "run", "."]
+    command: ["./d7024e"]
     networks:
         - kademlia_network
 
   kademliaNodes:
     image: kadlab:latest
-    command: ["/usr/local/go/bin/go", "run", ".", "-m", "client"]
+    command: ["./d7024e", "-m", "client"]
     networks:
         - kademlia_network
 
