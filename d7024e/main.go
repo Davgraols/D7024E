@@ -45,6 +45,10 @@ func run(bootstrap bool) {
 		switch msg.RpcType {
 		case 1:
 			fmt.Println("PING", msg.SenderIp)
+			contact := NewContact(IdFromBytes(msg.SenderId), msg.SenderIp)
+			go network.SendPingResponseMessage(&contact)
+		case 2:
+			fmt.Println("PONG", msg.SenderIp)
 		default:
 			fmt.Println("default")
 		}
