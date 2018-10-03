@@ -36,9 +36,12 @@ func run(bootstrap bool) {
 		kademlia := Kademlia{
 			routingTB: *routingTable,
 		}
-
+		net := Network{
+			Port:        "4000",
+			BootstrapIP: "kademliaBootstrap",
+		}
 		//go network.SendPingMessage(&bootstrapNode)
-		go kademlia.LookupContact(&me)
+		go kademlia.LookupContact(&me, &net)
 		go Listen("127.0.0.1", 4000)
 	} else {
 		go Listen("127.0.0.1", 4000)
@@ -53,6 +56,7 @@ func run(bootstrap bool) {
 		kademlia := Kademlia{
 			routingTB: *routingTable,
 		}
+
 		msg := <-Requests
 		switch msg.RpcType {
 		case 0:
@@ -83,6 +87,15 @@ func run(bootstrap bool) {
 		case 5:
 			//rpc svar för hittaa k närmsta
 			fmt.Println("Received FIND_NODE_RES from: ", msg.SenderIp)
+			klist := msg.Klist
+			for i := 0; i < len(klist); i++ {
+				id := klist[i].Id
+				ip := klist[i].Ip
+				newid := IdFromBytes(id)
+				newnode := NewContact(newid, string(ip))
+				routingTable.AddContact(newnode)
+			}
+			//routingTable.AddContact(msg.) vill ha contact
 
 		case 6:
 			fmt.Println("Received FIND_VALUE_REQ from: ", msg.SenderIp)

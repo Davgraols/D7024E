@@ -7,12 +7,13 @@ type Kademlia struct {
 	//file      []byte
 }
 
-func (kademlia *Kademlia) LookupContact(target *Contact, net Network) {
+func (kademlia *Kademlia) LookupContact(target *Contact, net *Network) {
 	fmt.Println("im in LookupContact")
 	Kcontact := kademlia.routingTB.FindClosestContacts(target.ID, 20)
-	fmt.Println(Kcontact)
+	//fmt.Println(Kcontact)
 	for i := 0; i < len(Kcontact); i++ {
-		go net.sendLookupKmessage(Kcontact[i])
+		fmt.Println("im in forloop")
+		go target.sendLookupKmessage(Kcontact[i])
 	}
 }
 
