@@ -97,8 +97,53 @@ func (network *Network) SendFindDataMessage(hash string) {
 	// TODO
 }
 
-func (network *Network) SendStoreMessage(data []byte) {
-	// TODO
+func (network *Network) SendStoreMessage(data []byte, routingTable *RoutingTable) {
+	targetID := NewRandomHash(string(data))
+	fmt.Println(targetID.String())
+	closetsContacts := routingTable.FindClosestContacts(targetID, 20)
+
+	rpc := RPC{
+		RpcType:  2,
+		Ser:      1337,
+		SenderId: MyId.ToBytes(),
+		Value:    data,
+	}
+
+	rpcData, err := proto.Marshal(&rpc)
+	if err != nil {
+		log.Fatal("marshalling error: ", err)
+	}
+	buf := []byte(rpcData)
+
+	for _, contact := range closetsContacts {
+		conn, err := net.Dial("udp", contact.Address+":4000")
+		CheckError(err)
+		defer conn.Close()
+
+		conn.Write(buf)
+		fmt.Printf("sending STORE_REQ with id %s to %s", hex.EncodeToString(rpc.SenderId), contact.Address)
+	}
+}
+
+func (network *Network) SendStoreResponseMessage(contact *Contact) {
+	rpc := RPC{
+		RpcType:  3,
+		Ser:      1337,
+		SenderId: MyId.ToBytes(),
+	}
+
+	data, err := proto.Marshal(&rpc)
+	if err != nil {
+		log.Fatal("marshalling error: ", err)
+	}
+	buf := []byte(data)
+
+	conn, err := net.Dial("udp", contact.Address+":4000")
+	CheckError(err)
+	defer conn.Close()
+
+	conn.Write(buf)
+	fmt.Printf("sending STORE_RES with id %s to %s", hex.EncodeToString(rpc.SenderId), contact.Address)
 }
 
 func CheckError(err error) {

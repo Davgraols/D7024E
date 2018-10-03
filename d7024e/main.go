@@ -11,7 +11,7 @@ var (
 	MyId     = NewRandomKademliaID()
 	network  = Network{Port: "4000", BootstrapIP: "127.0.0.1"}
 	Requests = make(chan RPC, 5)
-	Files    = make(map[string]string)
+	Files    = make(map[string][]byte)
 )
 
 func main() {
@@ -33,12 +33,15 @@ func run(bootstrap bool) {
 		bootstrapId := NewKademliaID("77ff0a3a0ec73e10ff408ece8728f84ae1af7bbf")
 		bootstrapNode := NewContact(bootstrapId, "kademliaBootstrap")
 		routingTable.AddContact(bootstrapNode)
-		go network.SendPingMessage(&bootstrapNode)
+		//go network.SendPingMessage(&bootstrapNode)
+		fmt.Println(len(routingTable.FindClosestContacts(bootstrapId, 1)))
+		go network.SendStoreMessage([]byte("Hello World!"), routingTable)
 		go Listen("127.0.0.1", 4000)
+
 	} else {
 		me := NewContact(MyId, "kademliaBootstrap")
 		routingTable := NewRoutingTable(me)
-		fmt.Println(routingTable.me.String())
+		fmt.Println("me: ", routingTable.me)
 		go Listen("127.0.0.1", 4000)
 	}
 
@@ -50,6 +53,7 @@ func run(bootstrap bool) {
 			senderIp := strings.Split(msg.SenderIp, ":")[0]
 			contact := NewContact(IdFromBytes(msg.SenderId), senderIp)
 			go network.SendPingResponseMessage(&contact)
+
 		case 1:
 			fmt.Println("Received PONG from: ", msg.SenderIp)
 			//senderIp := strings.Split(msg.SenderIp, ":")[0]
@@ -58,7 +62,13 @@ func run(bootstrap bool) {
 
 		case 2:
 			fmt.Println("Received STORE_REQ from: ", msg.SenderIp)
-			//data := msg.Value
+			messageString := string(msg.Value)
+			fileHashID := NewRandomHash(messageString)
+			Files[fileHashID.String()] = msg.Value
+			fmt.Println("Stored file: ", messageString)
+			senderIp := strings.Split(msg.SenderIp, ":")[0]
+			contact := NewContact(IdFromBytes(msg.SenderId), senderIp)
+			go network.SendStoreResponseMessage(&contact)
 
 		case 3:
 			fmt.Println("Received STORE_RES from: ", msg.SenderIp)
