@@ -33,23 +33,34 @@ func run(bootstrap bool) {
 		bootstrapId := NewKademliaID("77ff0a3a0ec73e10ff408ece8728f84ae1af7bbf")
 		bootstrapNode := NewContact(bootstrapId, "kademliaBootstrap")
 		routingTable.AddContact(bootstrapNode)
-		go network.SendPingMessage(&bootstrapNode)
+		kademlia := Kademlia{
+			routingTB: *routingTable,
+		}
+
+		//go network.SendPingMessage(&bootstrapNode)
+		go kademlia.LookupContact(&me)
 		go Listen("127.0.0.1", 4000)
 	} else {
-		me := NewContact(MyId, "kademliaBootstrap")
-		routingTable := NewRoutingTable(me)
-		fmt.Println(routingTable.me.String())
 		go Listen("127.0.0.1", 4000)
 	}
 
 	for {
+		me := NewContact(MyId, "kademliaNodes")
+		routingTable := NewRoutingTable(me)
+		bootstrapId := NewKademliaID("77ff0a3a0ec73e10ff408ece8728f84ae1af7bbf")
+		bootstrapNode := NewContact(bootstrapId, "kademliaBootstrap")
+		routingTable.AddContact(bootstrapNode)
+		kademlia := Kademlia{
+			routingTB: *routingTable,
+		}
 		msg := <-Requests
 		switch msg.RpcType {
 		case 0:
 			fmt.Println("Received PING from: ", msg.SenderIp)
-			senderIp := strings.Split(msg.SenderIp, ":")[0]
-			contact := NewContact(IdFromBytes(msg.SenderId), senderIp)
-			go network.SendPingResponseMessage(&contact)
+			//senderIp := strings.Split(msg.SenderIp, ":")[0]
+			//contact := NewContact(IdFromBytes(msg.SenderId), senderIp)
+			//go network.SendPingResponseMessage(&contact)
+			//go Kademlia.LookupContact(&contact)
 		case 1:
 			fmt.Println("Received PONG from: ", msg.SenderIp)
 			//senderIp := strings.Split(msg.SenderIp, ":")[0]
@@ -64,9 +75,13 @@ func run(bootstrap bool) {
 			fmt.Println("Received STORE_RES from: ", msg.SenderIp)
 
 		case 4:
+			//rpc för hitta k närmsta
 			fmt.Println("Received FIND_NODE_REQ from: ", msg.SenderIp)
-
+			senderIp := strings.Split(msg.SenderIp, ":")[0]
+			contact := NewContact(IdFromBytes(msg.SenderId), senderIp)
+			network.sendLookupKresp(MyId, &kademlia, &contact)
 		case 5:
+			//rpc svar för hittaa k närmsta
 			fmt.Println("Received FIND_NODE_RES from: ", msg.SenderIp)
 
 		case 6:

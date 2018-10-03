@@ -1,12 +1,16 @@
 package main
 
+import "fmt"
+
 type Kademlia struct {
 	routingTB RoutingTable
-	file      []byte
+	//file      []byte
 }
 
 func (kademlia *Kademlia) LookupContact(target *Contact) {
-	// TODO
+	fmt.Println("im in LookupContact")
+	Kcontact := kademlia.routingTB.FindClosestContacts(target.ID, 20)
+	fmt.Println(Kcontact)
 }
 
 func (kademlia *Kademlia) LookupData(hash string) {

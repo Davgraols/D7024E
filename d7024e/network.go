@@ -88,6 +88,44 @@ func (network *Network) SendPingResponseMessage(contact *Contact) {
 	fmt.Printf("sending PONG with id %s to %s", hex.EncodeToString(rpc.SenderId), contact.Address)
 
 }
+func (network *Network) sendLookupKresp(target *KademliaID, kademlia *Kademlia, contact *Contact) { //[]Contact
+	fmt.Printf("im in sendLookupKresp")
+	Kcontact := kademlia.routingTB.FindClosestContacts(target, 20)
+
+	var rpcklist []*RPCKnearest
+
+	for i := 0; i < len(Kcontact); i++ {
+		rpcnearest := RPCKnearest{
+			Id: Kcontact[i].ID.ToBytes(),
+			Ip: []byte(Kcontact[i].Address),
+		}
+		rpcklist = append(rpcklist, &rpcnearest)
+	}
+
+	rpc := RPC{
+		RpcType:  5,
+		Ser:      1337,
+		SenderId: MyId.ToBytes(),
+		Klist:    rpcklist,
+	}
+
+	data, err := proto.Marshal(&rpc)
+	if err != nil {
+		log.Fatal("marshalling error: ", err)
+	}
+	buf := []byte(data)
+
+	conn, err := net.Dial("udp", contact.Address+":4000")
+	CheckError(err)
+	defer conn.Close()
+
+	conn.Write(buf)
+
+}
+
+func (contac *Contact) makeRPClist(Kcontact *Contact) {
+
+}
 
 func (network *Network) SendFindContactMessage(contact *Contact) {
 	// TODO
