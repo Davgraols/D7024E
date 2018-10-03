@@ -120,7 +120,25 @@ func (network *Network) sendLookupKresp(target *KademliaID, kademlia *Kademlia, 
 	defer conn.Close()
 
 	conn.Write(buf)
+}
 
+func (contac *Contact) sendLookupKmessage(Kcontact Contact) {
+	rpc := RPC{
+		RpcType:  4,
+		Ser:      1337,
+		SenderId: MyId.ToBytes(),
+	}
+	data, err := proto.Marshal(&rpc)
+	if err != nil {
+		log.Fatal("marshalling error: ", err)
+	}
+	buf := []byte(data)
+
+	conn, err := net.Dial("udp", Kcontact.Address+":4000")
+	CheckError(err)
+	defer conn.Close()
+
+	conn.Write(buf)
 }
 
 func (contac *Contact) makeRPClist(Kcontact *Contact) {
