@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 )
@@ -30,7 +31,7 @@ func Listen(ip string, port int) {
 		n, addr, err := pc.ReadFrom(buf)
 		rpc := &RPC{}
 		err = proto.Unmarshal(buf[0:n], rpc)
-		rpc.SenderIp = addr.String()
+		rpc.SenderIp = strings.Split(addr.String(), ":")[0]
 
 		Requests <- *rpc
 		CheckError(err)
@@ -86,6 +87,65 @@ func (network *Network) SendPingResponseMessage(contact *Contact) {
 
 	conn.Write(buf)
 	fmt.Printf("sending PONG with id %s to %s", hex.EncodeToString(rpc.SenderId), contact.Address)
+
+}
+
+func (network *Network) sendLookupKmessage(Kcontact Contact, target *KademliaID) {
+	rpc := RPC{
+		RpcType:  4,
+		Ser:      1337,
+		SenderId: MyId.ToBytes(),
+		LookupId: target.ToBytes(),
+	}
+	data, err := proto.Marshal(&rpc)
+	if err != nil {
+		log.Fatal("marshalling error: ", err)
+	}
+	buf := []byte(data)
+
+	conn, err := net.Dial("udp", Kcontact.Address+":4000")
+	CheckError(err)
+	defer conn.Close()
+
+	conn.Write(buf)
+}
+
+func (network *Network) sendLookupKresp(target *KademliaID, contact *Contact) {
+	// TODO aquire RT mutex
+	Kcontact := RT.FindClosestContacts(target, K)
+
+	fmt.Printf("In sendLookupKresp. Found %d contacts in RT", len(Kcontact))
+	var rpcklist []*RPCKnearest
+
+	for i := 0; i < len(Kcontact); i++ {
+		rpcnearest := RPCKnearest{
+			Id: Kcontact[i].ID.ToBytes(),
+			Ip: []byte(Kcontact[i].Address),
+		}
+		rpcklist = append(rpcklist, &rpcnearest)
+	}
+
+	rpc := RPC{
+		RpcType:  5,
+		Ser:      1337,
+		SenderId: MyId.ToBytes(),
+		Klist:    rpcklist,
+	}
+
+	data, err := proto.Marshal(&rpc)
+	if err != nil {
+		log.Fatal("marshalling error: ", err)
+	}
+	buf := []byte(data)
+
+	conn, err := net.Dial("udp", contact.Address+":4000")
+	CheckError(err)
+	defer conn.Close()
+
+	conn.Write(buf)
+}
+
+func (contac *Contact) makeRPClist(Kcontact *Contact) {
 
 }
 
