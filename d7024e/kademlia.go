@@ -3,17 +3,21 @@ package main
 import "fmt"
 
 type Kademlia struct {
-	routingTB RoutingTable
+	//routingTB RoutingTable replaced with global variable
 	//file      []byte
 }
 
-func (kademlia *Kademlia) LookupContact(target *Contact, net *Network) {
+func (kademlia *Kademlia) LookupContact(target *KademliaID) {
 	fmt.Println("im in LookupContact")
-	Kcontact := kademlia.routingTB.FindClosestContacts(target.ID, 20)
+
+	// TODO aquire RT mutex
+	kContact := RT.FindClosestContacts(target, K)
 	//fmt.Println(Kcontact)
-	for i := 0; i < len(Kcontact); i++ {
+
+	// implement full lookup procedure so that only Alpha (global variable) calls are made in parallel.
+	for i := 0; i < len(kContact); i++ {
 		fmt.Println("im in forloop")
-		go target.sendLookupKmessage(Kcontact[i])
+		go Net.sendLookupKmessage(kContact[i], target)
 	}
 }
 
