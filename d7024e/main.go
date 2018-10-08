@@ -111,7 +111,7 @@ func handleFindNodeReq(msg RPC) {
 }
 
 func handleFindNodeRes(msg RPC) {
-	//rpc svar för hittaa k närmsta
+	//rpc svar för hita k närmsta
 	fmt.Println("Received FIND_NODE_RES from: ", msg.SenderIp)
 	klist := msg.Klist
 
