@@ -3,18 +3,30 @@ package main
 import (
 	"flag"
 	"fmt"
+	"sync"
 	"time"
 )
 
 var (
 	// Global variables
-	K        = 20
-	Alpha    = 3
-	RT       = RoutingTable{} // Needs mutex
-	MyId     = NewRandomKademliaID()
-	Requests = make(chan RPC, 5)
-	Files    = make(map[string][]byte)
-	Net      = Network{Port: "4000", BootstrapIP: "127.0.0.1"}
+	K      = 20
+	Alpha  = 3
+	MyId   = NewRandomKademliaID()
+	Serial = 0
+
+	// Global instances
+	RT          = &RoutingTable{} // Needs mutex
+	Connections map[string]chan RPC
+	Files       = make(map[string][]byte)
+	Requests    = make(chan RPC, 5)
+	Net         = Network{Port: "4000", BootstrapIP: "127.0.0.1"}
+	KademliaObj = Kademlia{}
+
+	//RTLock Global Locks
+	RTLock         = &sync.Mutex{}
+	FileLock       = &sync.Mutex{}
+	ConnectionLock = &sync.Mutex{}
+	SerialLock     = &sync.Mutex{}
 
 	// Local Variables
 	mode = flag.String("m", "server", "mode: client or server")
@@ -32,22 +44,22 @@ func main() {
 }
 
 func run(bootstrap bool) {
-	kademlia := Kademlia{}
 
 	if !bootstrap {
 		me := NewContact(MyId, "kademliaNodes")
-		RT = *NewRoutingTable(me)
+		*RT = *NewRoutingTable(me)
 		bootstrapId := NewKademliaID("77ff0a3a0ec73e10ff408ece8728f84ae1af7bbf")
 		bootstrapNode := NewContact(bootstrapId, "kademliaBootstrap")
 		RT.AddContact(bootstrapNode)
 		time.Sleep(1 * time.Second)
 		go Listen("127.0.0.1", 4000)
 		//go Net.SendPingMessage(&bootstrapNode)
-		go kademlia.LookupContact(me.ID)
+		//go kademlia.LookupContact(me.ID)
+		go KademliaObj.Store([]byte("Hello world!"))
 
 	} else {
 		me := NewContact(MyId, "kademliaBootstrap")
-		RT = *NewRoutingTable(me)
+		*RT = *NewRoutingTable(me)
 		go Listen("127.0.0.1", 4000)
 	}
 
@@ -92,17 +104,24 @@ func handlePingRes(msg RPC) {
 
 func handleStoreReq(msg RPC) {
 	fmt.Println("Received STORE_REQ from: ", msg.SenderIp)
-	//data := msg.Value
+
+	fileHash := NewRandomHash(string(msg.Value))
+	FileLock.Lock()
+	Files[fileHash.String()] = msg.Value
+	FileLock.Unlock()
+	go KademliaObj.republish(fileHash.String(), 20)
+	fmt.Println("Stored file: ", string(msg.Value))
+	contact := NewContact(IdFromBytes(msg.SenderId), msg.SenderIp)
+
+	RTLock.Lock()
+	RT.AddContact(contact)
+	RTLock.Unlock()
+
+	go Net.SendStoreResponseMessage(&contact)
 }
 
 func handleStoreRes(msg RPC) {
-	fmt.Println("Received STORE_REQ from: ", msg.SenderIp)
-	messageString := string(msg.Value)
-	fileHashID := NewRandomHash(messageString)
-	Files[fileHashID.String()] = msg.Value
-	fmt.Println("Stored file: ", messageString)
-	contact := NewContact(IdFromBytes(msg.SenderId), msg.SenderIp)
-	go Net.SendStoreResponseMessage(&contact)
+	fmt.Println("Received STORE_RES from: ", msg.SenderIp)
 }
 
 func handleFindNodeReq(msg RPC) {
@@ -112,7 +131,7 @@ func handleFindNodeReq(msg RPC) {
 
 	// TODO aquire RT mutex
 	RT.AddContact(contact)
-	fmt.Println("Added contact: ", contact.String())
+	fmt.Printf("Added contact: %s, number of contacts in RT: %d\n", contact.String(), RT.numberOfContacts())
 	Net.sendLookupKresp(IdFromBytes(msg.LookupId), &contact)
 }
 

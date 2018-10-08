@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type Kademlia struct {
 	//routingTB RoutingTable replaced with global variable
@@ -19,6 +22,7 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) {
 		fmt.Println("im in forloop")
 		go Net.sendLookupKmessage(kContact[i], target)
 	}
+
 }
 
 func (kademlia *Kademlia) LookupData(hash string) {
@@ -26,5 +30,26 @@ func (kademlia *Kademlia) LookupData(hash string) {
 }
 
 func (kademlia *Kademlia) Store(data []byte) {
-	// TODO
+	targetID := NewRandomHash(string(data))
+
+	FileLock.Lock()
+	Files[targetID.String()] = data
+	FileLock.Unlock()
+
+	RTLock.Lock()
+	closetsContacts := RT.FindClosestContacts(targetID, K)
+	RTLock.Unlock()
+	for _, contact := range closetsContacts {
+		Net.SendStoreMessage(data, &contact)
+	}
+}
+
+func (kademlia *Kademlia) republish(fileHash string, after time.Duration) {
+	time.Sleep(after * time.Second)
+	FileLock.Lock()
+	file := Files[fileHash]
+	FileLock.Unlock()
+	kademlia.Store(file)
+	fmt.Println("Republished file: ", string(Files[fileHash]))
+	kademlia.republish(fileHash, after)
 }

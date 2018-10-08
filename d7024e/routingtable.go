@@ -50,7 +50,6 @@ func (routingTable *RoutingTable) FindClosestContacts(target *KademliaID, count 
 	if count > candidates.Len() {
 		count = candidates.Len()
 	}
-
 	return candidates.GetContacts(count)
 }
 
@@ -66,4 +65,12 @@ func (routingTable *RoutingTable) getBucketIndex(id *KademliaID) int {
 	}
 
 	return IDLength*8 - 1
+}
+
+func (routingTable *RoutingTable) numberOfContacts() int {
+	count := 0
+	for _, bucket := range routingTable.buckets {
+		count += bucket.Len()
+	}
+	return count
 }

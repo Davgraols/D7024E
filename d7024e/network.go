@@ -157,14 +157,16 @@ func (network *Network) SendFindDataMessage(hash string) {
 	// TODO
 }
 
-func (network *Network) SendStoreMessage(data []byte, routingTable *RoutingTable) {
-	targetID := NewRandomHash(string(data))
-	fmt.Println(targetID.String())
-	closetsContacts := routingTable.FindClosestContacts(targetID, 20)
+func (network *Network) SendStoreMessage(data []byte, contact *Contact) {
+
+	SerialLock.Lock()
+	serial := int32(Serial)
+	Serial++
+	SerialLock.Unlock()
 
 	rpc := RPC{
 		RpcType:  2,
-		Ser:      1337,
+		Ser:      serial,
 		SenderId: MyId.ToBytes(),
 		Value:    data,
 	}
@@ -175,14 +177,11 @@ func (network *Network) SendStoreMessage(data []byte, routingTable *RoutingTable
 	}
 	buf := []byte(rpcData)
 
-	for _, contact := range closetsContacts {
-		conn, err := net.Dial("udp", contact.Address+":4000")
-		CheckError(err)
-		defer conn.Close()
-
-		conn.Write(buf)
-		fmt.Printf("sending STORE_REQ with id %s to %s", hex.EncodeToString(rpc.SenderId), contact.Address)
-	}
+	conn, err := net.Dial("udp", contact.Address+":4000")
+	CheckError(err)
+	defer conn.Close()
+	conn.Write(buf)
+	fmt.Printf("sending STORE_REQ with id %s to %s serial: %d", hex.EncodeToString(rpc.SenderId), contact.Address, serial)
 }
 
 func (network *Network) SendStoreResponseMessage(contact *Contact) {
