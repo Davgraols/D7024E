@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type Kademlia struct {
 	//routingTB RoutingTable replaced with global variable
@@ -24,8 +27,11 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) {
 	alphachannel1 := make(chan RPC)
 	alphachannel2 := make(chan RPC)
 	alphachannel3 := make(chan RPC)
-
+	var newKlist []Contact
 	kContact := RT.FindClosestContacts(target, K) // TODO aquire RT mutex
+	concan := ContactCandidates{
+		contacts: newKlist,
+	}
 
 	for i := 0; i < len(kContact); i++ { // TODO make chanels an mutex
 		if rounds == 3 {
@@ -46,25 +52,30 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) {
 			rounds = rounds + 1
 		}
 		respond := 0
+		msg1 := <-alphachannel1
+		msg2 := <-alphachannel2
+		msg3 := <-alphachannel3
 		for respond < 3 {
 
-			for i := range alphachannel1 {
-
-				respond = respond + 1
-			}
-			for i := range alphachannel2 {
-
-				respond = respond + 1
-			}
-			for i := range alphachannel3 {
-
-				respond = respond + 1
+			select{
+				case msg1 = <- respond{
+					concan.Append(msg1.klist)
+					concan.Sort()
+					respond = respond + 1
+				}
+				case msg3 = <- respond{
+					concan.Append(msg1.klist)
+					concan.Sort()
+					respond = respond + 1
+				}
+				case msg2 = <- respond{
+					concan.Append(msg1.klist)
+					concan.Sort()
+					respond = respond + 1
+				}
 			}
 		}
 	}
-
-}
-func compareLen(klist, ktarget []Contact) []Contact {
 
 }
 
@@ -89,5 +100,26 @@ func (kademlia *Kademlia) LookupData(hash string) {
 }
 
 func (kademlia *Kademlia) Store(data []byte) {
-	// TODO
+	targetID := NewRandomHash(string(data))
+
+	FileLock.Lock()
+	Files[targetID.String()] = data
+	FileLock.Unlock()
+
+	RTLock.Lock()
+	closetsContacts := RT.FindClosestContacts(targetID, K)
+	RTLock.Unlock()
+	for _, contact := range closetsContacts {
+		Net.SendStoreMessage(data, &contact)
+	}
+}
+
+func (kademlia *Kademlia) republish(fileHash string, after time.Duration) {
+	time.Sleep(after * time.Second)
+	FileLock.Lock()
+	file := Files[fileHash]
+	FileLock.Unlock()
+	kademlia.Store(file)
+	fmt.Println("Republished file: ", string(Files[fileHash]))
+	kademlia.republish(fileHash, after)
 }

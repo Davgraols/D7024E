@@ -114,6 +114,7 @@ func handleFindNodeRes(msg RPC) {
 	//rpc svar för hita k närmsta
 	fmt.Println("Received FIND_NODE_RES from: ", msg.SenderIp)
 	klist := msg.Klist
+	var newKlist []Contact
 
 	// TODO aquire RT mutex
 	for i := 0; i < len(klist); i++ {
@@ -121,9 +122,10 @@ func handleFindNodeRes(msg RPC) {
 		ip := klist[i].Ip
 		newid := IdFromBytes(id)
 		newnode := NewContact(newid, string(ip))
-		RT.AddContact(newnode)
+		newKlist = append(newKlist, newnode)
 		fmt.Println("Added contact: ", newnode.String())
 	}
+
 }
 
 func handleFindValueReq(msg RPC) {
