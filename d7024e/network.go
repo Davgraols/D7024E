@@ -153,16 +153,113 @@ func (network *Network) SendFindContactMessage(contact *Contact) {
 	// TODO
 }
 
+<<<<<<< HEAD
 func (network *Network) SendFindDataMessage(hash string) {
 	// TODO
 }
 
 func (network *Network) SendStoreMessage(data []byte) {
 	// TODO
+=======
+func (network *Network) SendStoreMessage(data []byte, contact *Contact) {
+
+	SerialLock.Lock()
+	serial := Serial
+	Serial++
+	SerialLock.Unlock()
+
+	rpc := RPC{
+		RpcType:  2,
+		Ser:      serial,
+		SenderId: MyId.ToBytes(),
+		Value:    data,
+	}
+
+	rpcData, err := proto.Marshal(&rpc)
+	if err != nil {
+		log.Fatal("marshalling error: ", err)
+	}
+	buf := []byte(rpcData)
+
+	conn, err := net.Dial("udp", contact.Address+":4000")
+	CheckError(err)
+	defer conn.Close()
+	conn.Write(buf)
+	fmt.Printf("sending STORE_REQ with id %s to %s serial: %d", hex.EncodeToString(rpc.SenderId), contact.Address, serial)
+}
+
+func (network *Network) SendStoreResponseMessage(contact *Contact) {
+	rpc := RPC{
+		RpcType:  3,
+		Ser:      1337,
+		SenderId: MyId.ToBytes(),
+	}
+
+	data, err := proto.Marshal(&rpc)
+	if err != nil {
+		log.Fatal("marshalling error: ", err)
+	}
+	buf := []byte(data)
+
+	conn, err := net.Dial("udp", contact.Address+":4000")
+	CheckError(err)
+	defer conn.Close()
+
+	conn.Write(buf)
+	fmt.Printf("sending STORE_RES with id %s to %s", hex.EncodeToString(rpc.SenderId), contact.Address)
+>>>>>>> b7005231a1971ff51c1903d522c1184cea39742e
 }
 
 func CheckError(err error) {
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
+}
+
+func (network *Network) SendFindDataMessage(fileId *KademliaID, contact *Contact) {
+	SerialLock.Lock()
+	serial := Serial
+	Serial++
+	SerialLock.Unlock()
+
+	rpc := RPC{
+		RpcType:  6,
+		Ser:      serial,
+		SenderId: MyId.ToBytes(),
+		LookupId: fileId.ToBytes(),
+	}
+
+	rpcData, err := proto.Marshal(&rpc)
+	if err != nil {
+		log.Fatal("marshalling error: ", err)
+	}
+	buf := []byte(rpcData)
+
+	conn, err := net.Dial("udp", contact.Address+":4000")
+	CheckError(err)
+	defer conn.Close()
+	conn.Write(buf)
+	fmt.Printf("sending FIND_VALUE_REQ with id %s to %s serial: %d", hex.EncodeToString(rpc.SenderId), contact.Address, serial)
+}
+
+func (network *Network) SendFindDataResponseMessage(data []byte, contactList []Contact, contact *Contact, serial int32) {
+
+	rpc := RPC{
+		RpcType:  7,
+		Ser:      serial,
+		SenderId: MyId.ToBytes(),
+		Value:    data,
+	}
+
+	rpcData, err := proto.Marshal(&rpc)
+	if err != nil {
+		log.Fatal("marshalling error: ", err)
+	}
+	buf := []byte(rpcData)
+
+	conn, err := net.Dial("udp", contact.Address+":4000")
+	CheckError(err)
+	defer conn.Close()
+	conn.Write(buf)
+	fmt.Printf("sending FIND_VALUE_RES with id %s to %s serial: %d", hex.EncodeToString(rpc.SenderId), contact.Address, serial)
 }

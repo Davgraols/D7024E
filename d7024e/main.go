@@ -8,6 +8,7 @@ import (
 
 var (
 	// Global variables
+<<<<<<< HEAD
 	K        = 20
 	Alpha    = 3
 	RT       = RoutingTable{} // Needs mutex
@@ -15,6 +16,26 @@ var (
 	Requests = make(chan RPC, 5)
 	Files    = make(map[string]string) // Needs mutex
 	Net      = Network{Port: "4000", BootstrapIP: "127.0.0.1"}
+=======
+	K      = 20
+	Alpha  = 3
+	MyId   = NewRandomKademliaID()
+	Serial = int32(0)
+
+	// Global instances
+	RT          = &RoutingTable{} // Needs mutex
+	Connections map[string]chan RPC
+	Files       = make(map[KademliaID][]byte)
+	Requests    = make(chan RPC, 5)
+	Net         = Network{Port: "4000", BootstrapIP: "127.0.0.1"}
+	KademliaObj = Kademlia{}
+
+	//RTLock Global Locks
+	RTLock         = &sync.Mutex{}
+	FileLock       = &sync.Mutex{}
+	ConnectionLock = &sync.Mutex{}
+	SerialLock     = &sync.Mutex{}
+>>>>>>> b7005231a1971ff51c1903d522c1184cea39742e
 
 	// Local Variables
 	mode = flag.String("m", "server", "mode: client or server")
@@ -92,7 +113,24 @@ func handlePingRes(msg RPC) {
 
 func handleStoreReq(msg RPC) {
 	fmt.Println("Received STORE_REQ from: ", msg.SenderIp)
+<<<<<<< HEAD
 	//data := msg.Value
+=======
+
+	fileHash := NewRandomHash(string(msg.Value))
+	FileLock.Lock()
+	Files[*fileHash] = msg.Value
+	FileLock.Unlock()
+	go KademliaObj.republish(*fileHash, 20)
+	fmt.Println("Stored file: ", string(msg.Value))
+	contact := NewContact(IdFromBytes(msg.SenderId), msg.SenderIp)
+
+	RTLock.Lock()
+	RT.AddContact(contact)
+	RTLock.Unlock()
+
+	go Net.SendStoreResponseMessage(&contact)
+>>>>>>> b7005231a1971ff51c1903d522c1184cea39742e
 }
 
 func handleStoreRes(msg RPC) {
@@ -111,7 +149,11 @@ func handleFindNodeReq(msg RPC) {
 }
 
 func handleFindNodeRes(msg RPC) {
+<<<<<<< HEAD
 	//rpc svar för hita k närmsta
+=======
+	//rpc svar för hitta k närmsta
+>>>>>>> b7005231a1971ff51c1903d522c1184cea39742e
 	fmt.Println("Received FIND_NODE_RES from: ", msg.SenderIp)
 	klist := msg.Klist
 	var newKlist []Contact
@@ -130,6 +172,17 @@ func handleFindNodeRes(msg RPC) {
 
 func handleFindValueReq(msg RPC) {
 	fmt.Println("Received FIND_VALUE_REQ from: ", msg.SenderIp)
+	//fileId := msg.LookupId
+	FileLock.Lock()
+	//file, exists := Files[*IdFromBytes(fileId)]
+	FileLock.Unlock()
+
+	contact := NewContact(IdFromBytes(msg.SenderId), msg.SenderIp)
+
+	RTLock.Lock()
+	RT.AddContact(contact)
+	RTLock.Unlock()
+
 }
 
 func handleFindValueRes(msg RPC) {
