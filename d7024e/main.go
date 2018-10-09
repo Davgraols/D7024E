@@ -12,12 +12,12 @@ var (
 	K      = 20
 	Alpha  = 3
 	MyId   = NewRandomKademliaID()
-	Serial = 0
+	Serial = int32(0)
 
 	// Global instances
 	RT          = &RoutingTable{} // Needs mutex
 	Connections map[string]chan RPC
-	Files       = make(map[string][]byte)
+	Files       = make(map[KademliaID][]byte)
 	Requests    = make(chan RPC, 5)
 	Net         = Network{Port: "4000", BootstrapIP: "127.0.0.1"}
 	KademliaObj = Kademlia{}
@@ -107,9 +107,9 @@ func handleStoreReq(msg RPC) {
 
 	fileHash := NewRandomHash(string(msg.Value))
 	FileLock.Lock()
-	Files[fileHash.String()] = msg.Value
+	Files[*fileHash] = msg.Value
 	FileLock.Unlock()
-	go KademliaObj.republish(fileHash.String(), 20)
+	go KademliaObj.republish(*fileHash, 20)
 	fmt.Println("Stored file: ", string(msg.Value))
 	contact := NewContact(IdFromBytes(msg.SenderId), msg.SenderIp)
 
@@ -136,7 +136,7 @@ func handleFindNodeReq(msg RPC) {
 }
 
 func handleFindNodeRes(msg RPC) {
-	//rpc svar för hittaa k närmsta
+	//rpc svar för hitta k närmsta
 	fmt.Println("Received FIND_NODE_RES from: ", msg.SenderIp)
 	klist := msg.Klist
 
@@ -153,6 +153,17 @@ func handleFindNodeRes(msg RPC) {
 
 func handleFindValueReq(msg RPC) {
 	fmt.Println("Received FIND_VALUE_REQ from: ", msg.SenderIp)
+	//fileId := msg.LookupId
+	FileLock.Lock()
+	//file, exists := Files[*IdFromBytes(fileId)]
+	FileLock.Unlock()
+
+	contact := NewContact(IdFromBytes(msg.SenderId), msg.SenderIp)
+
+	RTLock.Lock()
+	RT.AddContact(contact)
+	RTLock.Unlock()
+
 }
 
 func handleFindValueRes(msg RPC) {

@@ -33,7 +33,7 @@ func (kademlia *Kademlia) Store(data []byte) {
 	targetID := NewRandomHash(string(data))
 
 	FileLock.Lock()
-	Files[targetID.String()] = data
+	Files[*targetID] = data
 	FileLock.Unlock()
 
 	RTLock.Lock()
@@ -44,7 +44,7 @@ func (kademlia *Kademlia) Store(data []byte) {
 	}
 }
 
-func (kademlia *Kademlia) republish(fileHash string, after time.Duration) {
+func (kademlia *Kademlia) republish(fileHash KademliaID, after time.Duration) {
 	time.Sleep(after * time.Second)
 	FileLock.Lock()
 	file := Files[fileHash]
