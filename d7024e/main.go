@@ -157,9 +157,9 @@ func handleFindNodeRes(msg RPC) {
 
 func handleFindValueReq(msg RPC) {
 	fmt.Println("Received FIND_VALUE_REQ from: ", msg.SenderIp)
-	//fileId := msg.LookupId
+	fileId := msg.LookupId
 	FileLock.Lock()
-	//file, exists := Files[*IdFromBytes(fileId)]
+	file, exists := Files[*IdFromBytes(fileId)]
 	FileLock.Unlock()
 
 	contact := NewContact(IdFromBytes(msg.SenderId), msg.SenderIp)
@@ -168,8 +168,18 @@ func handleFindValueReq(msg RPC) {
 	RT.AddContact(contact)
 	RTLock.Unlock()
 
+	if exists {
+		Net.SendFindDataResponseMessage(file, nil, &contact, msg.Ser)
+	} else {
+		RTLock.Lock()
+		contacts := RT.FindClosestContacts(IdFromBytes(msg.LookupId), 20)
+		RTLock.Unlock()
+		Net.SendFindDataResponseMessage(nil, contacts, &contact, msg.Ser)
+	}
 }
 
 func handleFindValueRes(msg RPC) {
 	fmt.Println("Received FIND_VALUE_RES from: ", msg.SenderIp)
+
+	// Connections[msg.Ser] <- msg
 }
