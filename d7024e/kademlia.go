@@ -22,7 +22,6 @@ type Nodeobj struct {
 func (kademlia *Kademlia) LookupContact(target *KademliaID) {
 	fmt.Println("im in LookupContact")
 	index := 0
-	ser := 0
 	rounds := 0
 	alphachannel1 := make(chan RPC)
 	alphachannel2 := make(chan RPC)
@@ -39,40 +38,38 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) {
 		} else {
 			targetcontact := NewContact(kContact[index].ID, kContact[index].Address) //adress = IP
 			go Net.sendLookupKmessage(targetcontact, kContact[index].ID)
+			Connections[Serial] = alphachannel1
 			index = index + 1
-			ser = ser + 1
 			targetcontact = NewContact(kContact[index].ID, kContact[index].Address) //adress = IP
 			go Net.sendLookupKmessage(targetcontact, kContact[index].ID)
+			Connections[Serial] = alphachannel1
 			index = index + 1
-			ser = ser + 1
 			targetcontact = NewContact(kContact[index].ID, kContact[index].Address) //adress = IP
 			go Net.sendLookupKmessage(targetcontact, kContact[index].ID)
+			Connections[Serial] = alphachannel1
 			index = index + 1
-			ser = ser + 1
 			rounds = rounds + 1
 		}
 		respond := 0
-		msg1 := <-alphachannel1
-		msg2 := <-alphachannel2
-		msg3 := <-alphachannel3
+
 		for respond < 3 {
 
-			select{
-				case msg1 = <- respond{
-					concan.Append(msg1.klist)
-					concan.Sort()
-					respond = respond + 1
-				}
-				case msg3 = <- respond{
-					concan.Append(msg1.klist)
-					concan.Sort()
-					respond = respond + 1
-				}
-				case msg2 = <- respond{
-					concan.Append(msg1.klist)
-					concan.Sort()
-					respond = respond + 1
-				}
+			select {
+			case msg1 = <-alphachannel1:
+				concan.Append(makeKlist(msg1.klist))
+				concan.Sort()
+				respond = respond + 1
+
+			case msg2 = <-alphachannel2:
+				concan.Append(makeKlist(msg2.klist))
+				concan.Sort()
+				respond = respond + 1
+
+			case msg3 = <-alphachannel3:
+				concan.Append(makeKlist(msg3.klist))
+				concan.Sort()
+				respond = respond + 1
+
 			}
 		}
 	}
@@ -91,7 +88,20 @@ func makenodeobj(contact *Contact, sernr int) Nodeobj {
 	return node
 }
 
-func findKClosest(alphalist Nodeobj) {
+func makeKlist(klist []*RPCKnearest) []Contact {
+	var newKlist []Contact
+
+	// TODO aquire RT mutex
+	for i := 0; i < len(klist); i++ {
+		id := klist[i].Id
+		ip := klist[i].Ip
+		newid := IdFromBytes(id)
+		newnode := NewContact(newid, string(ip))
+		newKlist = append(newKlist, newnode)
+		fmt.Println("Added contact: ", newnode.String())
+	}
+
+	return newKlist
 
 }
 

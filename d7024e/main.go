@@ -3,20 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"sync"
 	"time"
 )
 
 var (
 	// Global variables
-<<<<<<< HEAD
-	K        = 20
-	Alpha    = 3
-	RT       = RoutingTable{} // Needs mutex
-	MyId     = NewRandomKademliaID()
-	Requests = make(chan RPC, 5)
-	Files    = make(map[string]string) // Needs mutex
-	Net      = Network{Port: "4000", BootstrapIP: "127.0.0.1"}
-=======
 	K      = 20
 	Alpha  = 3
 	MyId   = NewRandomKademliaID()
@@ -24,7 +16,7 @@ var (
 
 	// Global instances
 	RT          = &RoutingTable{} // Needs mutex
-	Connections map[string]chan RPC
+	Connections = make(map[int32]chan RPC)
 	Files       = make(map[KademliaID][]byte)
 	Requests    = make(chan RPC, 5)
 	Net         = Network{Port: "4000", BootstrapIP: "127.0.0.1"}
@@ -35,7 +27,6 @@ var (
 	FileLock       = &sync.Mutex{}
 	ConnectionLock = &sync.Mutex{}
 	SerialLock     = &sync.Mutex{}
->>>>>>> b7005231a1971ff51c1903d522c1184cea39742e
 
 	// Local Variables
 	mode = flag.String("m", "server", "mode: client or server")
@@ -113,9 +104,6 @@ func handlePingRes(msg RPC) {
 
 func handleStoreReq(msg RPC) {
 	fmt.Println("Received STORE_REQ from: ", msg.SenderIp)
-<<<<<<< HEAD
-	//data := msg.Value
-=======
 
 	fileHash := NewRandomHash(string(msg.Value))
 	FileLock.Lock()
@@ -130,13 +118,13 @@ func handleStoreReq(msg RPC) {
 	RTLock.Unlock()
 
 	go Net.SendStoreResponseMessage(&contact)
->>>>>>> b7005231a1971ff51c1903d522c1184cea39742e
 }
 
 func handleStoreRes(msg RPC) {
 	fmt.Println("Received STORE_RES from: ", msg.SenderIp)
 }
 
+//RPC4
 func handleFindNodeReq(msg RPC) {
 	//rpc för hitta k närmsta
 	fmt.Println("Received FIND_NODE_REQ from: ", msg.SenderIp)
@@ -148,12 +136,9 @@ func handleFindNodeReq(msg RPC) {
 	Net.sendLookupKresp(IdFromBytes(msg.LookupId), &contact)
 }
 
+//RPC5
 func handleFindNodeRes(msg RPC) {
-<<<<<<< HEAD
-	//rpc svar för hita k närmsta
-=======
 	//rpc svar för hitta k närmsta
->>>>>>> b7005231a1971ff51c1903d522c1184cea39742e
 	fmt.Println("Received FIND_NODE_RES from: ", msg.SenderIp)
 	klist := msg.Klist
 	var newKlist []Contact
