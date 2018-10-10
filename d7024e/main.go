@@ -16,7 +16,7 @@ var (
 
 	// Global instances
 	RT          = &RoutingTable{} // Needs mutex
-	Connections map[string]chan RPC
+	Connections = make(map[int32]chan RPC)
 	Files       = make(map[KademliaID][]byte)
 	Requests    = make(chan RPC, 5)
 	Net         = Network{Port: "4000", BootstrapIP: "127.0.0.1"}
@@ -153,9 +153,9 @@ func handleFindNodeRes(msg RPC) {
 
 func handleFindValueReq(msg RPC) {
 	fmt.Println("Received FIND_VALUE_REQ from: ", msg.SenderIp)
-	//fileId := msg.LookupId
+	fileId := msg.LookupId
 	FileLock.Lock()
-	//file, exists := Files[*IdFromBytes(fileId)]
+	file, exists := Files[*IdFromBytes(fileId)]
 	FileLock.Unlock()
 
 	contact := NewContact(IdFromBytes(msg.SenderId), msg.SenderIp)
@@ -164,8 +164,18 @@ func handleFindValueReq(msg RPC) {
 	RT.AddContact(contact)
 	RTLock.Unlock()
 
+	if exists {
+		Net.SendFindDataResponseMessage(file, nil, &contact, msg.Ser)
+	} else {
+		RTLock.Lock()
+		contacts := RT.FindClosestContacts(IdFromBytes(msg.LookupId), 20)
+		RTLock.Unlock()
+		Net.SendFindDataResponseMessage(nil, contacts, &contact, msg.Ser)
+	}
 }
 
 func handleFindValueRes(msg RPC) {
 	fmt.Println("Received FIND_VALUE_RES from: ", msg.SenderIp)
+
+	// Connections[msg.Ser] <- msg
 }
