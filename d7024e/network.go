@@ -153,14 +153,6 @@ func (network *Network) SendFindContactMessage(contact *Contact) {
 	// TODO
 }
 
-<<<<<<< HEAD
-func (network *Network) SendFindDataMessage(hash string) {
-	// TODO
-}
-
-func (network *Network) SendStoreMessage(data []byte) {
-	// TODO
-=======
 func (network *Network) SendStoreMessage(data []byte, contact *Contact) {
 
 	SerialLock.Lock()
@@ -207,7 +199,6 @@ func (network *Network) SendStoreResponseMessage(contact *Contact) {
 
 	conn.Write(buf)
 	fmt.Printf("sending STORE_RES with id %s to %s", hex.EncodeToString(rpc.SenderId), contact.Address)
->>>>>>> b7005231a1971ff51c1903d522c1184cea39742e
 }
 
 func CheckError(err error) {

@@ -48,7 +48,7 @@ func run(bootstrap bool) {
 
 	if !bootstrap {
 		me := NewContact(MyId, "kademliaNodes")
-		RT = *NewRoutingTable(me)
+		RT = NewRoutingTable(me)
 		bootstrapId := NewKademliaID("77ff0a3a0ec73e10ff408ece8728f84ae1af7bbf")
 		bootstrapNode := NewContact(bootstrapId, "kademliaBootstrap")
 		RT.AddContact(bootstrapNode)
@@ -59,7 +59,7 @@ func run(bootstrap bool) {
 
 	} else {
 		me := NewContact(MyId, "kademliaBootstrap")
-		RT = *NewRoutingTable(me)
+		RT = NewRoutingTable(me)
 		go Listen("127.0.0.1", 4000)
 	}
 
