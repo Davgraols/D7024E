@@ -110,20 +110,35 @@ func (network *Network) sendLookupKmessage(Kcontact Contact, target *KademliaID)
 	conn.Write(buf)
 }
 
+func contactListToRpc(contactList []Contact) []*RPCKnearest {
+	var rpcklist []*RPCKnearest
+
+	for i := 0; i < len(contactList); i++ {
+		rpcnearest := RPCKnearest{
+			Id: contactList[i].ID.ToBytes(),
+			Ip: []byte(contactList[i].Address),
+		}
+		rpcklist = append(rpcklist, &rpcnearest)
+	}
+
+	return rpcklist
+}
+
 func (network *Network) sendLookupKresp(target *KademliaID, contact *Contact) {
 	// TODO aquire RT mutex
 	Kcontact := RT.FindClosestContacts(target, K)
 
 	fmt.Printf("In sendLookupKresp. Found %d contacts in RT", len(Kcontact))
-	var rpcklist []*RPCKnearest
-
-	for i := 0; i < len(Kcontact); i++ {
-		rpcnearest := RPCKnearest{
-			Id: Kcontact[i].ID.ToBytes(),
-			Ip: []byte(Kcontact[i].Address),
-		}
-		rpcklist = append(rpcklist, &rpcnearest)
-	}
+	//var rpcklist []*RPCKnearest
+	rpcklist := contactListToRpc(Kcontact)
+	/*
+		for i := 0; i < len(Kcontact); i++ {
+			rpcnearest := RPCKnearest{
+				Id: Kcontact[i].ID.ToBytes(),
+				Ip: []byte(Kcontact[i].Address),
+			}
+			rpcklist = append(rpcklist, &rpcnearest)
+		}*/
 
 	rpc := RPC{
 		RpcType:  5,
@@ -239,7 +254,14 @@ func (network *Network) SendFindDataResponseMessage(data []byte, contactList []C
 		RpcType:  7,
 		Ser:      serial,
 		SenderId: MyId.ToBytes(),
-		Value:    data,
+	}
+
+	if data != nil {
+		rpc.Value = data
+	} else if contactList != nil {
+		rpc.Klist = contactListToRpc(contactList)
+	} else {
+		log.Fatal("No data or contacts received")
 	}
 
 	rpcData, err := proto.Marshal(&rpc)
