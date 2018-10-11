@@ -15,7 +15,6 @@ type Nodeobj struct {
 	ser      int
 	lookedup bool //false = not checked
 	Contact  *Contact
-	distance *KademliaID
 	id       *KademliaID
 }
 
@@ -36,19 +35,26 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) {
 		if rounds == 3 {
 			break
 		} else {
-			targetcontact := NewContact(kContact[index].ID, kContact[index].Address) //adress = IP
-			go Net.sendLookupKmessage(targetcontact, kContact[index].ID)
-			Connections[Serial] = alphachannel1
-			index = index + 1
-			targetcontact = NewContact(kContact[index].ID, kContact[index].Address) //adress = IP
-			go Net.sendLookupKmessage(targetcontact, kContact[index].ID)
-			Connections[Serial] = alphachannel1
-			index = index + 1
-			targetcontact = NewContact(kContact[index].ID, kContact[index].Address) //adress = IP
-			go Net.sendLookupKmessage(targetcontact, kContact[index].ID)
-			Connections[Serial] = alphachannel1
-			index = index + 1
-			rounds = rounds + 1
+			if !(RT.getBucketIndex(kContact[index].ID)) {
+				targetcontact := NewContact(kContact[index].ID, kContact[index].Address) //adress = IP
+				go Net.sendLookupKmessage(targetcontact, kContact[index].ID)
+				Connections[Serial] = alphachannel1
+				index = index + 1
+			}
+			if !(RT.getBucketIndex(kContact[index].ID)) {
+				targetcontact = NewContact(kContact[index].ID, kContact[index].Address) //adress = IP
+				go Net.sendLookupKmessage(targetcontact, kContact[index].ID)
+				Connections[Serial] = alphachannel1
+				index = index + 1
+			}
+			if !(RT.getBucketIndex(kContact[index].ID)) {
+				targetcontact = NewContact(kContact[index].ID, kContact[index].Address) //adress = IP
+				go Net.sendLookupKmessage(targetcontact, kContact[index].ID)
+				Connections[Serial] = alphachannel1
+				index = index + 1
+				rounds = rounds + 1
+			}
+
 		}
 		respond := 0
 
@@ -56,24 +62,39 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) {
 
 			select {
 			case msg1 = <-alphachannel1:
-				concan.Append(makeKlist(msg1.klist))
+				tempK := msg1.klist
+				concan.Append(makeKlist(tempK))
 				concan.Sort()
+				for l := 0; l < len(tempK); l++ {
+					RT.AddContact(tempK[l])
+				}
 				respond = respond + 1
 
 			case msg2 = <-alphachannel2:
-				concan.Append(makeKlist(msg2.klist))
+				tempK2 := msg2.klist
+				concan.Append(makeKlist(tempK2))
 				concan.Sort()
+				for l := 0; l < len(tempK2); l++ {
+					RT.AddContact(tempK[l])
+				}
 				respond = respond + 1
 
 			case msg3 = <-alphachannel3:
-				concan.Append(makeKlist(msg3.klist))
+				tempK3 := msg3.klist
+				concan.Append(makeKlist(tempK3))
 				concan.Sort()
+				for l := 0; l < len(tempK3); l++ {
+					RT.AddContact(tempK[l])
+				}
 				respond = respond + 1
-
 			}
 		}
-	}
-
+		newKlist = concan.GetContacts(20)
+		if (kContact[0] == newKlist[0]) && (kContact[1] == newKlist[1]) && (kContact[2] == newKlist[2]) {
+			return newKlist
+		}
+	} //end of round
+	return newKlist
 }
 
 func makenodeobj(contact *Contact, sernr int) Nodeobj {
@@ -81,7 +102,6 @@ func makenodeobj(contact *Contact, sernr int) Nodeobj {
 		ser:      sernr,
 		lookedup: false,
 		Contact:  contact,
-		distance: contact.ID.CalcDistance(MyId),
 		id:       contact.ID,
 	}
 
