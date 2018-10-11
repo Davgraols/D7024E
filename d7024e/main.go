@@ -9,10 +9,9 @@ import (
 
 var (
 	// Global variables
-	K      = 20
-	Alpha  = 3
-	MyId   = NewRandomKademliaID()
-	Serial = int32(0)
+	K     = 20
+	Alpha = 3
+	MyId  = NewRandomKademliaID()
 
 	// Global instances
 	RT          = &RoutingTable{} // Needs mutex
@@ -26,7 +25,6 @@ var (
 	RTLock         = &sync.Mutex{}
 	FileLock       = &sync.Mutex{}
 	ConnectionLock = &sync.Mutex{}
-	SerialLock     = &sync.Mutex{}
 
 	// Local Variables
 	mode = flag.String("m", "server", "mode: client or server")
@@ -130,29 +128,20 @@ func handleFindNodeReq(msg RPC) {
 	fmt.Println("Received FIND_NODE_REQ from: ", msg.SenderIp)
 	contact := NewContact(IdFromBytes(msg.SenderId), msg.SenderIp)
 
-	// TODO aquire RT mutex
+	RTLock.Lock()
 	RT.AddContact(contact)
+	RTLock.Unlock()
 	fmt.Println("Added contact: ", contact.String())
-	Net.sendLookupKresp(IdFromBytes(msg.LookupId), &contact)
+	Net.sendLookupKresp(IdFromBytes(msg.LookupId), &contact, msg.Ser)
 }
 
 //RPC5
 func handleFindNodeRes(msg RPC) {
 	//rpc svar för hitta k närmsta
 	fmt.Println("Received FIND_NODE_RES from: ", msg.SenderIp)
-	klist := msg.Klist
-	var newKlist []Contact
-
-	// TODO aquire RT mutex
-	for i := 0; i < len(klist); i++ {
-		id := klist[i].Id
-		ip := klist[i].Ip
-		newid := IdFromBytes(id)
-		newnode := NewContact(newid, string(ip))
-		newKlist = append(newKlist, newnode)
-		fmt.Println("Added contact: ", newnode.String())
-	}
-
+	ConnectionLock.Lock()
+	Connections[msg.Ser] <- msg
+	ConnectionLock.Lock()
 }
 
 func handleFindValueReq(msg RPC) {

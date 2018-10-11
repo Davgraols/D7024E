@@ -35,6 +35,11 @@ func NewRandomKademliaID() *KademliaID {
 	return &newKademliaID
 }
 
+func NewRandomSerial() int32 {
+	rand.Seed(time.Now().UTC().UnixNano())
+	return rand.Int31()
+}
+
 func NewRandomHash(data string) *KademliaID {
 	letterBytes := data
 	newKademliaID := KademliaID{}

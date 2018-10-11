@@ -18,94 +18,127 @@ type Nodeobj struct {
 	id       *KademliaID
 }
 
-func (kademlia *Kademlia) LookupContact(target *KademliaID) {
+func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 	fmt.Println("im in LookupContact")
 	index := 0
 	rounds := 0
+	currentcheck := 0
+	serial := NewRandomSerial()
 	alphachannel1 := make(chan RPC)
 	alphachannel2 := make(chan RPC)
 	alphachannel3 := make(chan RPC)
+	lastchenel := make(chan RPC, K)
 	var newKlist []Contact
-	kContact := RT.FindClosestContacts(target, K) // TODO aquire RT mutex
+	var hasret []Contact
+	kContact := RT.FindClosestContacts(target, Alpha) // TODO aquire RT mutex
 	concan := ContactCandidates{
 		contacts: newKlist,
 	}
 
-	for i := 0; i < len(kContact); i++ { // TODO make chanels an mutex
-		if rounds == 3 {
-			break
-		} else {
-			if !(RT.getBucketIndex(kContact[index].ID)) {
-				targetcontact := NewContact(kContact[index].ID, kContact[index].Address) //adress = IP
-				go Net.sendLookupKmessage(targetcontact, kContact[index].ID)
-				Connections[Serial] = alphachannel1
-				index = index + 1
-			}
-			if !(RT.getBucketIndex(kContact[index].ID)) {
-				targetcontact = NewContact(kContact[index].ID, kContact[index].Address) //adress = IP
-				go Net.sendLookupKmessage(targetcontact, kContact[index].ID)
-				Connections[Serial] = alphachannel1
-				index = index + 1
-			}
-			if !(RT.getBucketIndex(kContact[index].ID)) {
-				targetcontact = NewContact(kContact[index].ID, kContact[index].Address) //adress = IP
-				go Net.sendLookupKmessage(targetcontact, kContact[index].ID)
-				Connections[Serial] = alphachannel1
-				index = index + 1
-				rounds = rounds + 1
-			}
+	for { // TODO make chanels an mutex
+		kContact = newAlpha(hasret, kContact)
 
+		if len(kContact) >= 1 {
+			serial = NewRandomSerial()
+			go Net.sendLookupKmessage(kContact[index], target, serial)
+			ConnectionLock.Lock()
+			Connections[serial] = alphachannel1
+			ConnectionLock.Unlock()
+			currentcheck++
+			index = index + 1
 		}
+
+		if len(kContact) >= 2 {
+			serial = NewRandomSerial()
+			go Net.sendLookupKmessage(kContact[index], target, serial)
+			ConnectionLock.Lock()
+			Connections[serial] = alphachannel2
+			ConnectionLock.Unlock()
+			currentcheck++
+			index = index + 1
+		}
+
+		if len(kContact) >= 3 {
+			serial = NewRandomSerial()
+			go Net.sendLookupKmessage(kContact[index], target, serial)
+			ConnectionLock.Lock()
+			Connections[serial] = alphachannel3
+			ConnectionLock.Unlock()
+			currentcheck++
+			index = index + 1
+		}
+
 		respond := 0
 
-		for respond < 3 {
+		for respond < currentcheck {
 
 			select {
-			case msg1 = <-alphachannel1:
-				tempK := msg1.klist
-				concan.Append(makeKlist(tempK))
-				concan.Sort()
-				for l := 0; l < len(tempK); l++ {
-					RT.AddContact(tempK[l])
-				}
+			case msg1 := <-alphachannel1:
+				tempK := makeKlist(msg1.Klist)
+				concan.Append(tempK)
+				hasret = append(hasret, NewContact(IdFromBytes(msg1.SenderId), msg1.SenderIp))
 				respond = respond + 1
 
-			case msg2 = <-alphachannel2:
-				tempK2 := msg2.klist
-				concan.Append(makeKlist(tempK2))
-				concan.Sort()
-				for l := 0; l < len(tempK2); l++ {
-					RT.AddContact(tempK[l])
-				}
+			case msg2 := <-alphachannel2:
+				tempK2 := makeKlist(msg2.Klist)
+				concan.Append(tempK2)
+				hasret = append(hasret, NewContact(IdFromBytes(msg2.SenderId), msg2.SenderIp))
 				respond = respond + 1
 
-			case msg3 = <-alphachannel3:
-				tempK3 := msg3.klist
-				concan.Append(makeKlist(tempK3))
-				concan.Sort()
-				for l := 0; l < len(tempK3); l++ {
-					RT.AddContact(tempK[l])
-				}
+			case msg3 := <-alphachannel3:
+				tempK3 := makeKlist(msg3.Klist)
+				concan.Append(tempK3)
+				hasret = append(hasret, NewContact(IdFromBytes(msg3.SenderId), msg3.SenderIp))
 				respond = respond + 1
+
 			}
 		}
-		newKlist = concan.GetContacts(20)
-		if (kContact[0] == newKlist[0]) && (kContact[1] == newKlist[1]) && (kContact[2] == newKlist[2]) {
-			return newKlist
+
+		currentcheck = 0
+		concan.Sort()
+		newKlist = concan.GetContacts(K)
+
+		index = 0
+		rounds = rounds + 1
+		if (rounds == 3) || (kContact[0] == newKlist[0]) {
+			for _, contact := range newKlist {
+				serial := NewRandomSerial()
+				go Net.sendLookupKmessage(contact, target, serial)
+				ConnectionLock.Lock()
+				Connections[serial] = lastchenel
+				ConnectionLock.Unlock()
+			}
+			break
 		}
-	} //end of round
+
+		kContact = newKlist
+	}
+
+	for res := 0; res < K; res++ {
+		msglast := <-lastchenel
+		tempKlast := makeKlist(msglast.Klist)
+		concan.Append(tempKlast)
+	}
+	concan.Sort()
+	newKlist = concan.GetContacts(K)
+	fmt.Println("Lookup returned: ", newKlist)
 	return newKlist
 }
 
-func makenodeobj(contact *Contact, sernr int) Nodeobj {
-	node := Nodeobj{
-		ser:      sernr,
-		lookedup: false,
-		Contact:  contact,
-		id:       contact.ID,
+func newAlpha(checked, klist []Contact) []Contact {
+	var templist []Contact
+	for _, contact := range klist {
+		exist := false
+		for _, checkedcon := range checked {
+			if contact.ID.Equals(checkedcon.ID) {
+				exist = true
+			}
+		}
+		if !exist {
+			templist = append(templist, contact)
+		}
 	}
-
-	return node
+	return templist
 }
 
 func makeKlist(klist []*RPCKnearest) []Contact {
