@@ -31,7 +31,6 @@ var (
 )
 
 func main() {
-
 	flag.Parse()
 	switch *mode {
 	case "server":
@@ -125,23 +124,23 @@ func handleStoreRes(msg RPC) {
 //RPC4
 func handleFindNodeReq(msg RPC) {
 	//rpc för hitta k närmsta
-	fmt.Println("Received FIND_NODE_REQ from: ", msg.SenderIp)
+	//fmt.Println("Received FIND_NODE_REQ from: ", msg.SenderIp)
 	contact := NewContact(IdFromBytes(msg.SenderId), msg.SenderIp)
 
 	RTLock.Lock()
 	RT.AddContact(contact)
 	RTLock.Unlock()
-	fmt.Println("Added contact: ", contact.String())
+	//fmt.Println("Added contact: ", contact.String())
 	Net.sendLookupKresp(IdFromBytes(msg.LookupId), &contact, msg.Ser)
 }
 
 //RPC5
 func handleFindNodeRes(msg RPC) {
 	//rpc svar för hitta k närmsta
-	fmt.Println("Received FIND_NODE_RES from: ", msg.SenderIp)
+	//fmt.Println("Received FIND_NODE_RES from: ", msg.SenderIp)
 	ConnectionLock.Lock()
 	Connections[msg.Ser] <- msg
-	ConnectionLock.Lock()
+	ConnectionLock.Unlock()
 }
 
 func handleFindValueReq(msg RPC) {
