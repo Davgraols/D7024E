@@ -47,12 +47,37 @@ func (candidates *ContactCandidates) Append(contacts []Contact) {
 
 // GetContacts returns the first count number of Contacts
 func (candidates *ContactCandidates) GetContacts(count int) []Contact {
-	return candidates.contacts[:count]
+	if count > len(candidates.contacts) {
+		return candidates.contacts
+	} else {
+		return candidates.contacts[:count]
+	}
 }
 
 // Sort the Contacts in ContactCandidates
 func (candidates *ContactCandidates) Sort() {
 	sort.Sort(candidates)
+}
+
+func (candidates *ContactCandidates) removeDuplicates() {
+	candidates.Sort()
+	newCandidates := []Contact{}
+	for i, contact := range candidates.contacts {
+		if i+1 < len(candidates.contacts) {
+			if !contact.ID.Equals(candidates.contacts[i+1].ID) {
+				newCandidates = append(newCandidates, contact)
+			}
+		} else {
+			newCandidates = append(newCandidates, contact)
+		}
+	}
+	candidates.contacts = newCandidates
+}
+
+func (candidates *ContactCandidates) calcDistances(target *KademliaID) {
+	for i := 0; i < len(candidates.contacts); i++ {
+		candidates.contacts[i].CalcDistance(target)
+	}
 }
 
 // Len returns the length of the ContactCandidates

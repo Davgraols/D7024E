@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/hex"
 	"math/rand"
+	"time"
 )
 
 // the static number of bytes in a KademliaID
@@ -27,10 +28,16 @@ func NewKademliaID(data string) *KademliaID {
 // change this to a better version if you like
 func NewRandomKademliaID() *KademliaID {
 	newKademliaID := KademliaID{}
+	rand.Seed(time.Now().UTC().UnixNano())
 	for i := 0; i < IDLength; i++ {
 		newKademliaID[i] = uint8(rand.Intn(256))
 	}
 	return &newKademliaID
+}
+
+func NewRandomSerial() int32 {
+	rand.Seed(time.Now().UTC().UnixNano())
+	return rand.Int31()
 }
 
 func NewRandomHash(data string) *KademliaID {
