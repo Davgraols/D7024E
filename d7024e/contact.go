@@ -63,12 +63,15 @@ func (candidates *ContactCandidates) removeDuplicates() {
 	candidates.Sort()
 	newCandidates := []Contact{}
 	for i, contact := range candidates.contacts {
-		if i < len(candidates.contacts) {
+		if i+1 < len(candidates.contacts) {
 			if !contact.ID.Equals(candidates.contacts[i+1].ID) {
 				newCandidates = append(newCandidates, contact)
 			}
+		} else {
+			newCandidates = append(newCandidates, contact)
 		}
 	}
+	candidates.contacts = newCandidates
 }
 
 func (candidates *ContactCandidates) calcDistances(target *KademliaID) {

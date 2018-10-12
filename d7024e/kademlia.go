@@ -142,6 +142,7 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 	}
 	fmt.Printf("Received %d final requests\n", finalReqCount)
 	concan.calcDistances(target)
+	concan.removeDuplicates()
 	concan.Sort()
 	newKlist = concan.GetContacts(K)
 	fmt.Println("Lookup returned: ", newKlist)
