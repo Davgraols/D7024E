@@ -47,7 +47,7 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 			Connections[serial] = alphachannel1
 			ConnectionLock.Unlock()
 			currentcheck++
-			index = index + 1
+			index++
 		}
 
 		if len(kContact) >= 2 {
@@ -58,7 +58,7 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 			Connections[serial] = alphachannel2
 			ConnectionLock.Unlock()
 			currentcheck++
-			index = index + 1
+			index++
 		}
 
 		if len(kContact) >= 3 {
@@ -69,7 +69,7 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 			Connections[serial] = alphachannel3
 			ConnectionLock.Unlock()
 			currentcheck++
-			index = index + 1
+			index++
 		}
 
 		respond := 0
@@ -86,7 +86,7 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 				tempContact := NewContact(IdFromBytes(msg1.SenderId), msg1.SenderIp)
 				hasret[*tempContact.ID] = tempContact
 				//hasret = append(hasret, NewContact(IdFromBytes(msg1.SenderId), msg1.SenderIp))
-				respond = respond + 1
+				respond++
 
 			case msg2 := <-alphachannel2:
 				fmt.Println("Received response on aplhachannel2")
@@ -96,7 +96,7 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 				tempContact := NewContact(IdFromBytes(msg2.SenderId), msg2.SenderIp)
 				hasret[*tempContact.ID] = tempContact
 				//hasret = append(hasret, NewContact(IdFromBytes(msg2.SenderId), msg2.SenderIp))
-				respond = respond + 1
+				respond++
 
 			case msg3 := <-alphachannel3:
 				fmt.Println("Received response on aplhachannel3")
@@ -106,7 +106,7 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 				tempContact := NewContact(IdFromBytes(msg3.SenderId), msg3.SenderIp)
 				hasret[*tempContact.ID] = tempContact
 				//hasret = append(hasret, NewContact(IdFromBytes(msg3.SenderId), msg3.SenderIp))
-				respond = respond + 1
+				respond++
 			}
 		}
 
@@ -157,11 +157,6 @@ func newAlpha(checked map[KademliaID]Contact, klist []Contact) []Contact {
 	for _, contact := range klist {
 
 		_, exist := checked[*contact.ID] // checks if contact has already been contacted
-		/*for _, checkedcon := range checked {
-			if contact.ID.Equals(checkedcon.ID) {
-				exist = true
-			}
-		}*/
 		if !exist {
 			templist = append(templist, contact)
 		}
