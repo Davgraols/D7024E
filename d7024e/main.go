@@ -87,9 +87,10 @@ func run(bootstrap bool) {
 }
 
 func handlePingReq(msg RPC) {
+	serialnr := NewRandomSerial()
 	fmt.Println("Received PING from: ", msg.SenderIp)
 	contact := NewContact(IdFromBytes(msg.SenderId), msg.SenderIp)
-	go Net.SendPingResponseMessage(&contact)
+	go Net.SendPingResponseMessage(&contact, serialnr)
 }
 
 func handlePingRes(msg RPC) {
@@ -114,7 +115,7 @@ func handleStoreReq(msg RPC) {
 	RT.AddContact(contact)
 	RTLock.Unlock()
 
-	go Net.SendStoreResponseMessage(&contact)
+	go Net.SendStoreResponseMessage(&contact, msg.Ser)
 }
 
 func handleStoreRes(msg RPC) {

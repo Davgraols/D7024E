@@ -39,11 +39,11 @@ func Listen(ip string, port int) {
 }
 
 // SendPingMessage ASDASD
-func (network *Network) SendPingMessage(contact *Contact) {
+func (network *Network) SendPingMessage(contact *Contact, serialnr int32) {
 
 	rpc := RPC{
 		RpcType:  0,
-		Ser:      1337,
+		Ser:      serialnr,
 		SenderId: MyId.ToBytes(),
 	}
 
@@ -67,11 +67,11 @@ func (network *Network) SendPingMessage(contact *Contact) {
 
 }
 
-func (network *Network) SendPingResponseMessage(contact *Contact) {
+func (network *Network) SendPingResponseMessage(contact *Contact, serialnr int32) {
 
 	rpc := RPC{
 		RpcType:  1,
-		Ser:      1337,
+		Ser:      serialnr,
 		SenderId: MyId.ToBytes(),
 	}
 
@@ -126,19 +126,11 @@ func contactListToRpc(contactList []Contact) []*RPCKnearest {
 
 func (network *Network) sendLookupKresp(target *KademliaID, contact *Contact, serialnr int32) {
 	// TODO aquire RT mutex
+	RTLock.Lock()
 	Kcontact := RT.FindClosestContacts(target, K)
+	RTLock.Unlock()
 
-	//fmt.Printf("In sendLookupKresp. Found %d contacts in RT", len(Kcontact))
-	//var rpcklist []*RPCKnearest
 	rpcklist := contactListToRpc(Kcontact)
-	/*
-		for i := 0; i < len(Kcontact); i++ {
-			rpcnearest := RPCKnearest{
-				Id: Kcontact[i].ID.ToBytes(),
-				Ip: []byte(Kcontact[i].Address),
-			}
-			rpcklist = append(rpcklist, &rpcnearest)
-		}*/
 
 	rpc := RPC{
 		RpcType:  5,
@@ -158,10 +150,6 @@ func (network *Network) sendLookupKresp(target *KademliaID, contact *Contact, se
 	defer conn.Close()
 
 	conn.Write(buf)
-}
-
-func (contac *Contact) makeRPClist(Kcontact *Contact) {
-
 }
 
 func (network *Network) SendFindContactMessage(contact *Contact) {
@@ -190,10 +178,10 @@ func (network *Network) SendStoreMessage(data []byte, contact *Contact) {
 	fmt.Printf("sending STORE_REQ with id %s to %s serial: %d", hex.EncodeToString(rpc.SenderId), contact.Address, rpc.Ser)
 }
 
-func (network *Network) SendStoreResponseMessage(contact *Contact) {
+func (network *Network) SendStoreResponseMessage(contact *Contact, serialnr int32) {
 	rpc := RPC{
 		RpcType:  3,
-		Ser:      1337,
+		Ser:      serialnr,
 		SenderId: MyId.ToBytes(),
 	}
 
