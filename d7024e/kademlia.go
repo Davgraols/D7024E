@@ -38,7 +38,7 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 
 	for { // TODO make chanels an mutex
 		kContact = newAlpha(hasret, kContact)
-		fmt.Printf("Starting round: %d with %d contacts", rounds, len(kContact))
+		fmt.Printf("Starting round: %d with %d contacts\n", rounds, len(kContact))
 		if len(kContact) >= 1 {
 			serial = NewRandomSerial()
 			fmt.Println("Sending lookup 1")
@@ -82,6 +82,7 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 				fmt.Println("Received response on aplhachannel1")
 				tempK := makeKlist(msg1.Klist)
 				concan.Append(tempK)
+				fmt.Printf("Added %d contacts to concan. Current size: %d\n", len(tempK), concan.Len())
 				tempContact := NewContact(IdFromBytes(msg1.SenderId), msg1.SenderIp)
 				hasret[*tempContact.ID] = tempContact
 				//hasret = append(hasret, NewContact(IdFromBytes(msg1.SenderId), msg1.SenderIp))
@@ -91,6 +92,7 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 				fmt.Println("Received response on aplhachannel2")
 				tempK2 := makeKlist(msg2.Klist)
 				concan.Append(tempK2)
+				fmt.Printf("Added %d contacts to concan. Current size: %d\n", len(tempK2), concan.Len())
 				tempContact := NewContact(IdFromBytes(msg2.SenderId), msg2.SenderIp)
 				hasret[*tempContact.ID] = tempContact
 				//hasret = append(hasret, NewContact(IdFromBytes(msg2.SenderId), msg2.SenderIp))
@@ -100,16 +102,17 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 				fmt.Println("Received response on aplhachannel3")
 				tempK3 := makeKlist(msg3.Klist)
 				concan.Append(tempK3)
+				fmt.Printf("Added %d contacts to concan. Current size: %d\n", len(tempK3), concan.Len())
 				tempContact := NewContact(IdFromBytes(msg3.SenderId), msg3.SenderIp)
 				hasret[*tempContact.ID] = tempContact
 				//hasret = append(hasret, NewContact(IdFromBytes(msg3.SenderId), msg3.SenderIp))
 				respond = respond + 1
-
 			}
 		}
 
 		currentcheck = 0
 		concan.calcDistances(target)
+		concan.removeDuplicates()
 		concan.Sort()
 		newKlist = concan.GetContacts(K)
 
@@ -169,14 +172,13 @@ func newAlpha(checked map[KademliaID]Contact, klist []Contact) []Contact {
 func makeKlist(klist []*RPCKnearest) []Contact {
 	var newKlist []Contact
 
-	// TODO aquire RT mutex
 	for i := 0; i < len(klist); i++ {
 		id := klist[i].Id
 		ip := klist[i].Ip
 		newid := IdFromBytes(id)
 		newnode := NewContact(newid, string(ip))
 		newKlist = append(newKlist, newnode)
-		fmt.Println("Added contact: ", newnode.String())
+		//fmt.Println("Added contact: ", newnode.String())
 	}
 
 	return newKlist

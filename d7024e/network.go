@@ -128,7 +128,7 @@ func (network *Network) sendLookupKresp(target *KademliaID, contact *Contact, se
 	// TODO aquire RT mutex
 	Kcontact := RT.FindClosestContacts(target, K)
 
-	fmt.Printf("In sendLookupKresp. Found %d contacts in RT", len(Kcontact))
+	//fmt.Printf("In sendLookupKresp. Found %d contacts in RT", len(Kcontact))
 	//var rpcklist []*RPCKnearest
 	rpcklist := contactListToRpc(Kcontact)
 	/*
