@@ -30,6 +30,8 @@ var (
 	mode = flag.String("m", "server", "mode: client or server")
 )
 
+//go contact.NewKademliaID("1337")
+
 func main() {
 	flag.Parse()
 	switch *mode {

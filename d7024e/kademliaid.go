@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/hex"
+	"fmt"
 	"math/rand"
 	"time"
 )
@@ -20,9 +21,14 @@ func NewKademliaID(data string) *KademliaID {
 	for i := 0; i < IDLength; i++ {
 		newKademliaID[i] = decoded[i]
 	}
-
+	fmt.Println("newID = ")
+	fmt.Println(&newKademliaID)
 	return &newKademliaID
 }
+
+//func testNewKadid(t *testing.T) {
+//	testid := NewKademliaID("1337")
+//}
 
 // NewRandomKademliaID returns a new instance of a random KademliaID,
 // change this to a better version if you like
