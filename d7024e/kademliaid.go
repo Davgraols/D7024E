@@ -41,6 +41,7 @@ func NewRandomSerial() int32 {
 }
 
 func NewRandomHash(data string) *KademliaID {
+	rand.Seed(1337)
 	letterBytes := data
 	newKademliaID := KademliaID{}
 	b := make([]byte, 20)

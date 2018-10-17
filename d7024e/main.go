@@ -7,16 +7,21 @@ import (
 	"time"
 )
 
+const (
+	K              = 20
+	Alpha          = 3
+	NodeRepublish  = time.Second * 20
+	OwnerRepublish = time.Second * 60
+)
+
 var (
-	// Global variables
-	K     = 20
-	Alpha = 3
-	MyId  = NewRandomKademliaID()
+	MyId = NewRandomKademliaID()
 
 	// Global instances
 	RT          = &RoutingTable{} // Needs mutex
 	Connections = make(map[int32]chan RPC)
 	Files       = make(map[KademliaID][]byte)
+	Filemap     = make(map[KademliaID][]byte)
 	Requests    = make(chan RPC, 5)
 	Net         = Network{Port: "4000", BootstrapIP: "127.0.0.1"}
 	KademliaObj = Kademlia{}
@@ -41,7 +46,6 @@ func main() {
 }
 
 func run(bootstrap bool) {
-	kademlia := Kademlia{}
 
 	if !bootstrap {
 		me := NewContact(MyId, "kademliaNodes")
@@ -49,15 +53,15 @@ func run(bootstrap bool) {
 		bootstrapId := NewKademliaID("77ff0a3a0ec73e10ff408ece8728f84ae1af7bbf")
 		bootstrapNode := NewContact(bootstrapId, "kademliaBootstrap")
 		RT.AddContact(bootstrapNode)
-		time.Sleep(1 * time.Second)
 		go Listen("127.0.0.1", 4000)
-		//go Net.SendPingMessage(&bootstrapNode)
-		go kademlia.LookupContact(me.ID)
+		go nodeInit()
 
 	} else {
+		MyId = NewKademliaID("77ff0a3a0ec73e10ff408ece8728f84ae1af7bbf")
 		me := NewContact(MyId, "kademliaBootstrap")
 		RT = NewRoutingTable(me)
 		go Listen("127.0.0.1", 4000)
+		go bootstrapInit()
 	}
 
 	for {
@@ -86,6 +90,26 @@ func run(bootstrap bool) {
 	}
 }
 
+func nodeInit() {
+	time.Sleep(1 * time.Second)
+	file := []byte("Hello world")
+	go KademliaObj.Store(file)
+	time.Sleep(10 * time.Second)
+	//go kademlia.LookupContact(me.ID)
+	fileId := NewRandomHash("Hello world")
+	fmt.Println("Looking up file with id: ", fileId.String())
+	go KademliaObj.LookupData(fileId)
+}
+
+func bootstrapInit() {
+	//file := []byte("Hello world")
+	//fileId := NewRandomHash(string(file))
+	//Files[*fileId] = file
+	//fmt.Printf("Stored file: %s with key: %s, to string: %s \n", string(file), fileId, fileId.String())
+	//time.Sleep(time.Second * 5)
+	//go kademlia.Store([]byte("Hello world"))
+}
+
 func handlePingReq(msg RPC) {
 	serialnr := NewRandomSerial()
 	fmt.Println("Received PING from: ", msg.SenderIp)
@@ -101,13 +125,13 @@ func handlePingRes(msg RPC) {
 }
 
 func handleStoreReq(msg RPC) {
-	fmt.Println("Received STORE_REQ from: ", msg.SenderIp)
+	fmt.Printf("Received STORE_REQ from: %s with serial: %d\n", msg.SenderIp, msg.Ser)
 
 	fileHash := NewRandomHash(string(msg.Value))
 	FileLock.Lock()
 	Files[*fileHash] = msg.Value
 	FileLock.Unlock()
-	go KademliaObj.republish(*fileHash, 20)
+	go KademliaObj.republish(fileHash, NodeRepublish)
 	fmt.Println("Stored file: ", string(msg.Value))
 	contact := NewContact(IdFromBytes(msg.SenderId), msg.SenderIp)
 
@@ -115,17 +139,17 @@ func handleStoreReq(msg RPC) {
 	RT.AddContact(contact)
 	RTLock.Unlock()
 
-	go Net.SendStoreResponseMessage(&contact, msg.Ser)
+	Net.SendStoreResponseMessage(&contact, msg.Ser)
 }
 
 func handleStoreRes(msg RPC) {
-	fmt.Println("Received STORE_RES from: ", msg.SenderIp)
+	fmt.Printf("Received STORE_RES from: %s with serial: %d\n", msg.SenderIp, msg.Ser)
 }
 
 //RPC4
 func handleFindNodeReq(msg RPC) {
 	//rpc för hitta k närmsta
-	//fmt.Println("Received FIND_NODE_REQ from: ", msg.SenderIp)
+	fmt.Printf("Received FIND_NODE_REQ from: %s with serial: %d\n", msg.SenderIp, msg.Ser)
 	contact := NewContact(IdFromBytes(msg.SenderId), msg.SenderIp)
 
 	RTLock.Lock()
@@ -138,19 +162,19 @@ func handleFindNodeReq(msg RPC) {
 //RPC5
 func handleFindNodeRes(msg RPC) {
 	//rpc svar för hitta k närmsta
-	//fmt.Println("Received FIND_NODE_RES from: ", msg.SenderIp)
+	fmt.Printf("Received FIND_NODE_RES from: %s with serial: %d\n", msg.SenderIp, msg.Ser)
 	ConnectionLock.Lock()
 	Connections[msg.Ser] <- msg
 	ConnectionLock.Unlock()
 }
 
 func handleFindValueReq(msg RPC) {
-	fmt.Println("Received FIND_VALUE_REQ from: ", msg.SenderIp)
-	fileId := msg.LookupId
+	fmt.Printf("Received FIND_VALUE_REQ from: %s with serial: %d\n", msg.SenderIp, msg.Ser)
+	fileId := IdFromBytes(msg.LookupId)
 	FileLock.Lock()
-	file, exists := Files[*IdFromBytes(fileId)]
+	file, exists := Files[*fileId]
 	FileLock.Unlock()
-
+	fmt.Printf("File id: %s exists: %t\n", fileId.String(), exists)
 	contact := NewContact(IdFromBytes(msg.SenderId), msg.SenderIp)
 
 	RTLock.Lock()
@@ -158,8 +182,10 @@ func handleFindValueReq(msg RPC) {
 	RTLock.Unlock()
 
 	if exists {
+		fmt.Println("File exists!")
 		Net.SendFindDataResponseMessage(file, nil, &contact, msg.Ser)
 	} else {
+		fmt.Println("File does not exist")
 		RTLock.Lock()
 		contacts := RT.FindClosestContacts(IdFromBytes(msg.LookupId), 20)
 		RTLock.Unlock()
@@ -168,7 +194,9 @@ func handleFindValueReq(msg RPC) {
 }
 
 func handleFindValueRes(msg RPC) {
-	fmt.Println("Received FIND_VALUE_RES from: ", msg.SenderIp)
+	fmt.Printf("Received FIND_VALUE_RES from: %s with serial: %d\n", msg.SenderIp, msg.Ser)
 
-	// Connections[msg.Ser] <- msg
+	ConnectionLock.Lock()
+	Connections[msg.Ser] <- msg
+	ConnectionLock.Unlock()
 }
