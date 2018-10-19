@@ -59,7 +59,9 @@ func (network *Network) SendPingMessage(contact *Contact, serialnr int32) {
 	defer conn.Close()
 
 	conn.Write(buf)
-	fmt.Printf("sending PING with id %s to %s\n", hex.EncodeToString(rpc.SenderId), contact.Address)
+	if NetworkDebug {
+		fmt.Printf("sending PING with id %s to %s\n", hex.EncodeToString(rpc.SenderId), contact.Address)
+	}
 
 	if err != nil {
 		log.Println(err)
@@ -86,7 +88,9 @@ func (network *Network) SendPingResponseMessage(contact *Contact, serialnr int32
 	defer conn.Close()
 
 	conn.Write(buf)
-	fmt.Printf("sending PONG with id %s to %s\n", hex.EncodeToString(rpc.SenderId), contact.Address)
+	if NetworkDebug {
+		fmt.Printf("sending PONG with id %s to %s\n", hex.EncodeToString(rpc.SenderId), contact.Address)
+	}
 
 }
 
@@ -108,7 +112,9 @@ func (network *Network) sendLookupKmessage(Kcontact Contact, target *KademliaID,
 	defer conn.Close()
 
 	conn.Write(buf)
-	fmt.Printf("sending FIND_NODE_REQ with id %s to %s serial: %d\n", hex.EncodeToString(rpc.SenderId), Kcontact.Address, rpc.Ser)
+	if NetworkDebug {
+		fmt.Printf("sending FIND_NODE_REQ with id %s to %s serial: %d\n", hex.EncodeToString(rpc.SenderId), Kcontact.Address, rpc.Ser)
+	}
 }
 
 func contactListToRpc(contactList []Contact) []*RPCKnearest {
@@ -151,20 +157,24 @@ func (network *Network) sendLookupKresp(target *KademliaID, contact *Contact, se
 	defer conn.Close()
 
 	conn.Write(buf)
-	fmt.Printf("sending FIND_NODE_RES with id %s to %s serial: %d\n", hex.EncodeToString(rpc.SenderId), contact.Address, rpc.Ser)
+	if NetworkDebug {
+		fmt.Printf("sending FIND_NODE_RES with id %s to %s serial: %d\n", hex.EncodeToString(rpc.SenderId), contact.Address, rpc.Ser)
+	}
 }
 
 func (network *Network) SendFindContactMessage(contact *Contact) {
 	// TODO
 }
 
-func (network *Network) SendStoreMessage(data []byte, contact *Contact) {
+func (network *Network) SendStoreMessage(data []byte, contact *Contact, owner *Contact) {
 
 	rpc := RPC{
 		RpcType:  2,
 		Ser:      NewRandomSerial(),
 		SenderId: MyId.ToBytes(),
 		Value:    data,
+		LookupId: owner.ID.ToBytes(),
+		OwnerIp:  owner.Address,
 	}
 
 	rpcData, err := proto.Marshal(&rpc)
@@ -177,7 +187,9 @@ func (network *Network) SendStoreMessage(data []byte, contact *Contact) {
 	CheckError(err)
 	defer conn.Close()
 	conn.Write(buf)
-	fmt.Printf("sending STORE_REQ with id %s to %s serial: %d\n", hex.EncodeToString(rpc.SenderId), contact.Address, rpc.Ser)
+	if NetworkDebug {
+		fmt.Printf("sending STORE_REQ with id %s to %s serial: %d\n", hex.EncodeToString(rpc.SenderId), contact.Address, rpc.Ser)
+	}
 }
 
 func (network *Network) SendStoreResponseMessage(contact *Contact, serialnr int32) {
@@ -198,7 +210,9 @@ func (network *Network) SendStoreResponseMessage(contact *Contact, serialnr int3
 	defer conn.Close()
 
 	conn.Write(buf)
-	fmt.Printf("sending STORE_RES with id %s to %s\n", hex.EncodeToString(rpc.SenderId), contact.Address)
+	if NetworkDebug {
+		fmt.Printf("sending STORE_RES with id %s to %s\n", hex.EncodeToString(rpc.SenderId), contact.Address)
+	}
 }
 
 func CheckError(err error) {
@@ -226,10 +240,12 @@ func (network *Network) SendFindDataMessage(fileId *KademliaID, contact *Contact
 	CheckError(err)
 	defer conn.Close()
 	conn.Write(buf)
-	fmt.Printf("sending FIND_VALUE_REQ with id %s to %s serial: %d\n", hex.EncodeToString(rpc.SenderId), contact.Address, rpc.Ser)
+	if NetworkDebug {
+		fmt.Printf("sending FIND_VALUE_REQ with id %s to %s serial: %d\n", hex.EncodeToString(rpc.SenderId), contact.Address, rpc.Ser)
+	}
 }
 
-func (network *Network) SendFindDataResponseMessage(data []byte, contactList []Contact, contact *Contact, serialnr int32) {
+func (network *Network) SendFindDataResponseMessage(data []byte, contactList []Contact, contact *Contact, serialnr int32, owner *Contact) {
 
 	rpc := RPC{
 		RpcType:  7,
@@ -239,6 +255,8 @@ func (network *Network) SendFindDataResponseMessage(data []byte, contactList []C
 
 	if data != nil {
 		rpc.Value = data
+		rpc.OwnerIp = owner.Address
+		rpc.LookupId = owner.ID.ToBytes()
 	} else if contactList != nil {
 		rpc.Klist = contactListToRpc(contactList)
 	} else {
@@ -255,5 +273,7 @@ func (network *Network) SendFindDataResponseMessage(data []byte, contactList []C
 	CheckError(err)
 	defer conn.Close()
 	conn.Write(buf)
-	fmt.Printf("sending FIND_VALUE_RES with id %s to %s serial: %d\n", hex.EncodeToString(rpc.SenderId), contact.Address, rpc.Ser)
+	if NetworkDebug {
+		fmt.Printf("sending FIND_VALUE_RES with id %s to %s serial: %d\n", hex.EncodeToString(rpc.SenderId), contact.Address, rpc.Ser)
+	}
 }

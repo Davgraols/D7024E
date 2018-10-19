@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 )
 
 type Kademlia struct {
@@ -19,7 +18,10 @@ type Nodeobj struct {
 }
 
 func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
-	fmt.Println("im in LookupContact")
+	if KademliaDebug {
+		fmt.Println("Starting LookupContact procedure")
+	}
+
 	index := 0
 	rounds := 0
 	currentcheck := 0
@@ -34,7 +36,10 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 	RTLock.Lock()
 	hasret[*MyId] = RT.me
 	kContact := RT.FindClosestContacts(target, Alpha) // TODO aquire RT mutex
-	fmt.Println("Lookup current k closests: ", kContact)
+	if KademliaDebug {
+		fmt.Println("Lookup current k closests: ", kContact)
+	}
+
 	RTLock.Unlock()
 	concan := ContactCandidates{
 		contacts: newKlist,
@@ -44,10 +49,14 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 	for { // TODO make chanels an mutex
 		kContact = newAlpha(hasret, kContact)
 		currentcheck = 0
-		fmt.Printf("Starting round: %d with %d contacts\n", rounds, len(kContact))
+		if KademliaDebug {
+			fmt.Printf("Starting round: %d with %d contacts\n", rounds, len(kContact))
+		}
 		if len(kContact) >= 1 {
 			serial = NewRandomSerial()
-			fmt.Println("Sending lookup 1")
+			if KademliaDebug {
+				fmt.Println("Sending lookup 1")
+			}
 			go Net.sendLookupKmessage(kContact[index], target, serial)
 			ConnectionLock.Lock()
 			Connections[serial] = alphachannel1
@@ -58,7 +67,9 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 
 		if len(kContact) >= 2 {
 			serial = NewRandomSerial()
-			fmt.Println("Sending lookup 2")
+			if KademliaDebug {
+				fmt.Println("Sending lookup 2")
+			}
 			go Net.sendLookupKmessage(kContact[index], target, serial)
 			ConnectionLock.Lock()
 			Connections[serial] = alphachannel2
@@ -69,7 +80,10 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 
 		if len(kContact) >= 3 {
 			serial = NewRandomSerial()
-			fmt.Println("Sending lookup 3")
+			if KademliaDebug {
+				fmt.Println("Sending lookup 3")
+			}
+
 			go Net.sendLookupKmessage(kContact[index], target, serial)
 			ConnectionLock.Lock()
 			Connections[serial] = alphachannel3
@@ -80,35 +94,44 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 
 		respond := 0
 
-		fmt.Printf("Wating for %d responses\n", currentcheck)
+		if KademliaDebug {
+			fmt.Printf("Wating for %d responses\n", currentcheck)
+		}
+
 		for respond < currentcheck {
 
 			select {
 			case msg1 := <-alphachannel1:
-				fmt.Println("Received response on aplhachannel1")
 				tempK := makeKlist(msg1.Klist)
 				concan.Append(tempK)
-				fmt.Printf("Added %d contacts to concan. Current size: %d\n", len(tempK), concan.Len())
+				if KademliaDebug {
+					fmt.Println("Received response on aplhachannel1")
+					fmt.Printf("Added %d contacts to concan. Current size: %d\n", len(tempK), concan.Len())
+				}
 				tempContact := NewContact(IdFromBytes(msg1.SenderId), msg1.SenderIp)
 				hasret[*tempContact.ID] = tempContact
 				//hasret = append(hasret, NewContact(IdFromBytes(msg1.SenderId), msg1.SenderIp))
 				respond++
 
 			case msg2 := <-alphachannel2:
-				fmt.Println("Received response on aplhachannel2")
 				tempK2 := makeKlist(msg2.Klist)
 				concan.Append(tempK2)
-				fmt.Printf("Added %d contacts to concan. Current size: %d\n", len(tempK2), concan.Len())
+				if KademliaDebug {
+					fmt.Println("Received response on aplhachannel2")
+					fmt.Printf("Added %d contacts to concan. Current size: %d\n", len(tempK2), concan.Len())
+				}
 				tempContact := NewContact(IdFromBytes(msg2.SenderId), msg2.SenderIp)
 				hasret[*tempContact.ID] = tempContact
 				//hasret = append(hasret, NewContact(IdFromBytes(msg2.SenderId), msg2.SenderIp))
 				respond++
 
 			case msg3 := <-alphachannel3:
-				fmt.Println("Received response on aplhachannel3")
 				tempK3 := makeKlist(msg3.Klist)
 				concan.Append(tempK3)
-				fmt.Printf("Added %d contacts to concan. Current size: %d\n", len(tempK3), concan.Len())
+				if KademliaDebug {
+					fmt.Println("Received response on aplhachannel3")
+					fmt.Printf("Added %d contacts to concan. Current size: %d\n", len(tempK3), concan.Len())
+				}
 				tempContact := NewContact(IdFromBytes(msg3.SenderId), msg3.SenderIp)
 				hasret[*tempContact.ID] = tempContact
 				//hasret = append(hasret, NewContact(IdFromBytes(msg3.SenderId), msg3.SenderIp))
@@ -124,7 +147,10 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 		index = 0
 		rounds = rounds + 1
 		if (rounds == 3) || (len(kContact) < 1) || (kContact[0] == newKlist[0]) {
-			fmt.Println("In final requests")
+			if KademliaDebug {
+				fmt.Println("In final requests")
+			}
+
 			for _, contact := range newKlist {
 				_, contacted := hasret[*contact.ID] // checks if contact has already been contacted
 				if !contacted {                     // Only send to contacts that has not been contacted
@@ -136,7 +162,9 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 					finalReqCount++
 				}
 			}
-			fmt.Printf("Sent %d final requests\n", finalReqCount)
+			if KademliaDebug {
+				fmt.Printf("Sent %d final requests\n", finalReqCount)
+			}
 			break
 		}
 
@@ -148,13 +176,16 @@ func (kademlia *Kademlia) LookupContact(target *KademliaID) []Contact {
 		tempKlast := makeKlist(msglast.Klist)
 		concan.Append(tempKlast)
 	}
-	fmt.Printf("Received %d final requests\n", finalReqCount)
+
 	concan.calcDistances(target)
 	concan.Sort()
 	concan.RemoveContact(MyId)
 	concan.removeDuplicates()
 	newKlist = concan.GetContacts(K)
-	fmt.Println("Lookup returned: ", newKlist)
+	if KademliaDebug {
+		fmt.Printf("Received %d final requests\n", finalReqCount)
+		fmt.Println("Lookup returned: ", newKlist)
+	}
 	return newKlist
 }
 
@@ -179,14 +210,15 @@ func makeKlist(klist []*RPCKnearest) []Contact {
 		newid := IdFromBytes(id)
 		newnode := NewContact(newid, string(ip))
 		newKlist = append(newKlist, newnode)
-		//fmt.Println("Added contact: ", newnode.String())
 	}
 
 	return newKlist
 }
 
 func (kademlia *Kademlia) LookupData(target *KademliaID) []byte {
-	fmt.Println("im in LookupData")
+	if KademliaDebug {
+		fmt.Println("Starting LookupData procedure")
+	}
 	index := 0
 	rounds := 0
 	currentcheck := 0
@@ -211,11 +243,14 @@ func (kademlia *Kademlia) LookupData(target *KademliaID) []byte {
 	for { // TODO make chanels an mutex
 		kContact = newAlpha(hasret, kContact)
 		currentcheck = 0
-
-		fmt.Printf("Starting round: %d with %d contacts\n", rounds, len(kContact))
+		if KademliaDebug {
+			fmt.Printf("Starting round: %d with %d contacts\n", rounds, len(kContact))
+		}
 		if len(kContact) >= 1 {
 			serial = NewRandomSerial()
-			fmt.Println("Sending lookup 1")
+			if KademliaDebug {
+				fmt.Println("Sending lookup 1")
+			}
 			go Net.SendFindDataMessage(target, &kContact[index], serial)
 			ConnectionLock.Lock()
 			Connections[serial] = alphachannel1
@@ -226,7 +261,9 @@ func (kademlia *Kademlia) LookupData(target *KademliaID) []byte {
 
 		if len(kContact) >= 2 {
 			serial = NewRandomSerial()
-			fmt.Println("Sending lookup 2")
+			if KademliaDebug {
+				fmt.Println("Sending lookup 2")
+			}
 			go Net.SendFindDataMessage(target, &kContact[index], serial)
 			ConnectionLock.Lock()
 			Connections[serial] = alphachannel2
@@ -237,7 +274,9 @@ func (kademlia *Kademlia) LookupData(target *KademliaID) []byte {
 
 		if len(kContact) >= 3 {
 			serial = NewRandomSerial()
-			fmt.Println("Sending lookup 3")
+			if KademliaDebug {
+				fmt.Println("Sending lookup 3")
+			}
 			go Net.SendFindDataMessage(target, &kContact[index], serial)
 			ConnectionLock.Lock()
 			Connections[serial] = alphachannel3
@@ -247,48 +286,67 @@ func (kademlia *Kademlia) LookupData(target *KademliaID) []byte {
 		}
 
 		respond := 0
-
-		fmt.Printf("Wating for %d responses\n", currentcheck)
+		if KademliaDebug {
+			fmt.Printf("Wating for %d responses\n", currentcheck)
+		}
 		for respond < currentcheck {
 
 			select {
 			case msg1 := <-alphachannel1:
-				fmt.Println("LD Received response on aplhachannel1")
+				if KademliaDebug {
+					fmt.Println("LD Received response on aplhachannel1")
+				}
 				if msg1.Value != nil {
-					fmt.Println("LookupData returned value: ", string(msg1.Value))
+					if KademliaDebug {
+						fmt.Println("LookupData returned value: ", string(msg1.Value))
+					}
 					return msg1.Value
 				} else {
 					tempK := makeKlist(msg1.Klist)
 					concan.Append(tempK)
-					fmt.Printf("Added %d contacts to concan. Current size: %d\n", len(tempK), concan.Len())
+					if KademliaDebug {
+						fmt.Printf("Added %d contacts to concan. Current size: %d\n", len(tempK), concan.Len())
+					}
 				}
 				tempContact := NewContact(IdFromBytes(msg1.SenderId), msg1.SenderIp)
 				hasret[*tempContact.ID] = tempContact
 				respond++
 
 			case msg2 := <-alphachannel2:
-				fmt.Println("LD Received response on aplhachannel2")
+				if KademliaDebug {
+					fmt.Println("LD Received response on aplhachannel2")
+				}
 				if msg2.Value != nil {
-					fmt.Println("LookupData returned value: ", string(msg2.Value))
+					if KademliaDebug {
+						fmt.Println("LookupData returned value: ", string(msg2.Value))
+					}
 					return msg2.Value
 				} else {
 					tempK := makeKlist(msg2.Klist)
 					concan.Append(tempK)
-					fmt.Printf("Added %d contacts to concan. Current size: %d\n", len(tempK), concan.Len())
+					if KademliaDebug {
+						fmt.Printf("Added %d contacts to concan. Current size: %d\n", len(tempK), concan.Len())
+					}
 				}
 				tempContact := NewContact(IdFromBytes(msg2.SenderId), msg2.SenderIp)
 				hasret[*tempContact.ID] = tempContact
 				respond++
 
 			case msg3 := <-alphachannel3:
-				fmt.Println("LD Received response on aplhachannel3")
+				if KademliaDebug {
+					fmt.Println("LD Received response on aplhachannel3")
+				}
 				if msg3.Value != nil {
-					fmt.Println("LookupData returned value: ", string(msg3.Value))
+					if KademliaDebug {
+						fmt.Println("LookupData returned value: ", string(msg3.Value))
+					}
 					return msg3.Value
 				} else {
 					tempK := makeKlist(msg3.Klist)
 					concan.Append(tempK)
-					fmt.Printf("Added %d contacts to concan. Current size: %d\n", len(tempK), concan.Len())
+					if KademliaDebug {
+						fmt.Printf("Added %d contacts to concan. Current size: %d\n", len(tempK), concan.Len())
+					}
 				}
 				tempContact := NewContact(IdFromBytes(msg3.SenderId), msg3.SenderIp)
 				hasret[*tempContact.ID] = tempContact
@@ -305,7 +363,9 @@ func (kademlia *Kademlia) LookupData(target *KademliaID) []byte {
 		index = 0
 		rounds = rounds + 1
 		if (rounds == 3) || (len(kContact) < 1) || (kContact[0] == newKlist[0]) {
-			fmt.Println("In final requests")
+			if KademliaDebug {
+				fmt.Println("In final requests")
+			}
 			for _, contact := range newKlist {
 				_, contacted := hasret[*contact.ID] // checks if contact has already been contacted
 				if !contacted {                     // Only send to contacts that has not been contacted
@@ -317,7 +377,9 @@ func (kademlia *Kademlia) LookupData(target *KademliaID) []byte {
 					finalReqCount++
 				}
 			}
-			fmt.Printf("Sent %d final requests\n", finalReqCount)
+			if KademliaDebug {
+				fmt.Printf("Sent %d final requests\n", finalReqCount)
+			}
 			break
 		}
 
@@ -326,43 +388,37 @@ func (kademlia *Kademlia) LookupData(target *KademliaID) []byte {
 
 	for res := 0; res < finalReqCount; res++ {
 		msglast := <-lastchenel
-		fmt.Println()
+
 		if msglast.Value != nil {
-			fmt.Println("LookupData returned value: ", string(msglast.Value))
+			if KademliaDebug {
+				fmt.Println("LookupData returned value: ", string(msglast.Value))
+			}
 			return msglast.Value
 		}
 	}
-	fmt.Printf("Received %d final requests\n", finalReqCount)
-	fmt.Println("LookupData returned nil")
+	if KademliaDebug {
+		fmt.Printf("Received %d final requests\n", finalReqCount)
+		fmt.Println("LookupData returned nil")
+	}
 	return nil
 }
 
 // Store stores a "file" data
-func (kademlia *Kademlia) Store(data []byte) {
-	fmt.Println("Starting store procedure")
+func (kademlia *Kademlia) Store(data []byte, owner *Contact) {
+	if KademliaDebug {
+		fmt.Println("Starting store procedure")
+	}
+
 	targetID := NewRandomHash(string(data))
 
-	FileLock.Lock()
-	Files[*targetID] = data
-	FileLock.Unlock()
-	fmt.Printf("Stored file: %s with id: %s\n", string(data), targetID.String())
-
-	go kademlia.republish(targetID, OwnerRepublish)
+	FS.StoreFile(data, owner)
+	if KademliaDebug {
+		fmt.Printf("Stored file: %s with id: %s\n", string(data), targetID.String())
+	}
 
 	closetsContacts := kademlia.LookupContact(targetID)
 
 	for _, contact := range closetsContacts {
-		Net.SendStoreMessage(data, &contact)
+		Net.SendStoreMessage(data, &contact, owner)
 	}
-}
-
-func (kademlia *Kademlia) republish(fileHash *KademliaID, after time.Duration) {
-	fmt.Println("Starting republish procedure")
-	time.Sleep(after)
-	FileLock.Lock()
-	file := Files[*fileHash]
-	FileLock.Unlock()
-	kademlia.Store(file)
-	fmt.Println("Republished file: ", string(Files[*fileHash]))
-	kademlia.republish(fileHash, after)
 }
