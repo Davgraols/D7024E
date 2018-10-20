@@ -19,21 +19,22 @@ func NewFileStore() FileStore {
 
 func (files *FileStore) StoreFile(fileContent []byte, owner *Contact) {
 	fileId := NewRandomHash(string(fileContent))
-	FileLock.Lock()
-	file, fileExist := files.fileData[*fileId]
-	FileLock.Unlock()
+	file, fileExist := files.getFile(fileId)
 	if fileExist {
 		if FileStoreDebug {
 			fmt.Println("File Exists. sending true to nodeRepub")
 		}
 		file.nodeRepub <- true
-		fmt.Println("sent true")
 	} else {
 		file = NewFile(fileContent, owner)
+		FileLock.Lock()
 		files.fileData[*fileId] = file
-		go files.republish(file)
+		FileLock.Unlock()
+		go files.republish(file.fileID)
 		if !owner.ID.Equals(RT.me.ID) {
-			go files.FileHeartbeat(file)
+			go files.FileHeartbeat(file.fileID)
+		} else {
+			files.PinFile(fileId)
 		}
 		if FileStoreDebug {
 			fmt.Println("File does not exist. Storing file and starting republish procedures")
@@ -76,81 +77,165 @@ func (files *FileStore) DeleteFile(fileID *KademliaID) {
 	}
 }
 
-func (files *FileStore) republish(file File) {
+func (files *FileStore) republish(fileID *KademliaID) {
+	file, exist := files.getFile(fileID)
+	for exist {
 
-	select {
-	case repub := <-file.nodeRepub:
-		if repub {
-			if FileStoreDebug {
-				fmt.Println("A FileRePub message received true, resetting repub timer. File: ", file.String())
+		select {
+		case repub := <-file.nodeRepub:
+			if repub {
+				if FileStoreDebug {
+					fmt.Println("A FileRePub message received true, resetting repub timer. File: ", string(file.content))
+				}
+			} else {
+				if FileStoreDebug {
+					fmt.Println("A FileRePub message received false, deleting file. File: ", string(file.content))
+				}
+				files.DeleteFile(file.fileID)
 			}
-			files.republish(file)
-		} else {
-			if FileStoreDebug {
-				fmt.Println("A FileRePub message received false, deleting file. File: ", file.String())
-			}
-			files.DeleteFile(file.fileID)
+
+		case <-time.After(NodeRepublish):
+			fmt.Println("No republishes received, republishing file: ", string(file.content))
+			go KademliaObj.Store(file.content, &file.owner)
 		}
-
-	case <-time.After(NodeRepublish):
-		fmt.Println("No republishes received, republishing file: ", file.String())
-		go KademliaObj.Store(file.content, &file.owner)
-		files.republish(file)
 	}
 }
 
-func (files *FileStore) FileHeartbeat(file File) {
-	if FileStoreDebug {
-		fmt.Println("Staring heartbeat timer for file: ", file.String())
-	}
-	time.Sleep(OwnerRepublish)
-	if FileStoreDebug {
-		fmt.Println("Staring heartbeat procedure for file: ", file.String())
-	}
-	responseChannel := make(chan RPC)
-	serial := NewRandomSerial()
-	ConnectionLock.Lock()
-	Connections[serial] = responseChannel
-	ConnectionLock.Unlock()
-	Net.SendFindDataMessage(file.fileID, &file.owner, serial)
+func (files *FileStore) FileHeartbeat(fileID *KademliaID) {
 
-	select {
-	case responseRPC := <-responseChannel:
-		if responseRPC.Value != nil {
-			if FileStoreDebug {
-				fmt.Println("Received response from owner. File exists: ", file.String())
-			}
-			files.FileHeartbeat(file)
-		} else {
-			if FileStoreDebug {
-				fmt.Println("Received response from owner. File is deleted: ", file.String())
-			}
-			file.nodeRepub <- false
-		}
-	case <-time.After(TimeOut):
+	file, exist := files.getFile(fileID)
+
+	for exist {
 		if FileStoreDebug {
-			fmt.Println("Did not receive any response from owner. Keeping file: ", file.String())
+			fmt.Println("Staring heartbeat timer for fileID: ", fileID.String())
 		}
-		files.FileHeartbeat(file)
+		time.Sleep(OwnerRepublish)
+		file, exist = files.getFile(fileID)
+
+		if file.republished {
+			files.SetRepublished(fileID, false)
+			if FileStoreDebug {
+				fmt.Println("File republished is true. Staring heartbeat procedure for file: ", string(file.content))
+			}
+			responseChannel := make(chan RPC)
+			serial := NewRandomSerial()
+			ConnectionLock.Lock()
+			Connections[serial] = responseChannel
+			ConnectionLock.Unlock()
+			Net.SendFindDataMessage(file.fileID, &file.owner, serial)
+
+			select {
+			case responseRPC := <-responseChannel:
+				if responseRPC.Value != nil {
+					if FileStoreDebug {
+						fmt.Println("Received response from owner. File exists: ", string(file.content))
+					}
+				} else {
+					if FileStoreDebug {
+						fmt.Println("Received response from owner. File is deleted: ", string(file.content))
+					}
+					file.nodeRepub <- false
+					exist = false
+				}
+			case <-time.After(TimeOut):
+				if FileStoreDebug {
+					fmt.Println("Did not receive any response from owner. Keeping file: ", string(file.content))
+				}
+			}
+		} else {
+			if !file.pinned {
+				if FileStoreDebug {
+					fmt.Println("File has not been republished, deleting file. Heartbeat should stop")
+				}
+				file.nodeRepub <- false
+				exist = false
+			}
+		}
+	}
+}
+
+func (files *FileStore) PinFile(fileID *KademliaID) {
+	file, exist := files.getFile(fileID)
+	if exist {
+		file.Pin()
+		FileLock.Lock()
+		files.fileData[*fileID] = file
+		FileLock.Unlock()
+	} else {
+		if FileStoreDebug {
+			fmt.Println("could not pin file. File does not exist.")
+		}
+	}
+}
+
+func (files *FileStore) UnpinFile(fileID *KademliaID) {
+	file, exist := files.getFile(fileID)
+	if exist {
+		file.Unpin()
+		FileLock.Lock()
+		files.fileData[*fileID] = file
+		FileLock.Unlock()
+	} else {
+		if FileStoreDebug {
+			fmt.Println("could not unpin file. File does not exist.")
+		}
+	}
+}
+
+func (files *FileStore) SetRepublished(fileID *KademliaID, republished bool) {
+	file, exist := files.getFile(fileID)
+	if exist {
+		file.SetRepublished(republished)
+		FileLock.Lock()
+		files.fileData[*file.fileID] = file
+		FileLock.Unlock()
+	} else {
+		fmt.Println("File does not exist. SetRepublished does nothing")
+	}
+}
+
+func (files *FileStore) IsPinned(fileID *KademliaID) bool {
+	file, exist := files.getFile(fileID)
+	if exist {
+		return file.pinned
+	} else {
+		if FileStoreDebug {
+			fmt.Println("File does not exist")
+		}
+		return false
 	}
 }
 
 type File struct {
-	fileID    *KademliaID
-	content   []byte
-	owner     Contact
-	nodeRepub chan bool
-	pinned    bool
+	fileID      *KademliaID
+	content     []byte
+	owner       Contact
+	nodeRepub   chan bool
+	republished bool
+	pinned      bool
 }
 
 func NewFile(fileContent []byte, fileOwner *Contact) File {
 	file := File{
-		fileID:    NewRandomHash(string(fileContent)),
-		content:   fileContent,
-		owner:     *fileOwner,
-		nodeRepub: make(chan bool),
+		fileID:      NewRandomHash(string(fileContent)),
+		content:     fileContent,
+		owner:       *fileOwner,
+		nodeRepub:   make(chan bool),
+		republished: false,
 	}
 	return file
+}
+
+func (file *File) Pin() {
+	file.pinned = true
+}
+
+func (file *File) Unpin() {
+	file.pinned = false
+}
+
+func (file *File) SetRepublished(republished bool) {
+	file.republished = republished
 }
 
 func (file *File) String() string {

@@ -8,15 +8,15 @@ import (
 )
 
 const (
-	K              = 20
+	K              = 3
 	Alpha          = 3
 	NodeRepublish  = time.Second * 10
-	OwnerRepublish = time.Second * 40
+	OwnerRepublish = time.Second * 35
 	TimeOut        = time.Second * 15
 	MainDebug      = false
 	NetworkDebug   = false
-	KademliaDebug  = false
-	FileStoreDebug = true
+	KademliaDebug  = true
+	FileStoreDebug = false
 )
 
 var (
@@ -97,25 +97,14 @@ func run(bootstrap bool) {
 
 func nodeInit() {
 	time.Sleep(1 * time.Second)
-	//file := []byte("Hello world")
-	//go KademliaObj.Store(file, &RT.me)
 	go KademliaObj.LookupContact(MyId)
-	/*time.Sleep(10 * time.Second)
-	//go kademlia.LookupContact(me.ID)
-	fileId := NewRandomHash("Hello world")
-	if MainDebug {
-		fmt.Println("Looking up file with id: ", fileId.String())
-	}
-	go KademliaObj.LookupData(fileId)*/
 }
 
 func bootstrapInit() {
-	time.Sleep(15 * time.Second)
-	go KademliaObj.Store([]byte("ASD"), &RT.me)
-	//time.Sleep(3 * time.Second)
-	//FS.DeleteFile(NewRandomHash("ASD"))
-	//FS.fileData[*NewRandomHash("ASD")]
-
+	time.Sleep(NodeRepublish)
+	KademliaObj.Store([]byte("hello asd"), &RT.me)
+	time.Sleep(NodeRepublish * 2)
+	KademliaObj.Unpin(NewRandomHash("hello asd"))
 }
 
 func handlePingReq(msg RPC) {
@@ -131,9 +120,6 @@ func handlePingRes(msg RPC) {
 	if MainDebug {
 		fmt.Println("Received PONG from: ", msg.SenderIp)
 	}
-	//senderIp := strings.Split(msg.SenderIp, ":")[0]
-	//contact := NewContact(IdFromBytes(msg.SenderId), senderIp)
-	//go network.SendPingMessage(&contact)
 }
 
 func handleStoreReq(msg RPC) {
@@ -143,7 +129,9 @@ func handleStoreReq(msg RPC) {
 
 	owner := NewContact(IdFromBytes(msg.LookupId), msg.OwnerIp)
 	if !owner.ID.Equals(RT.me.ID) {
+		fileID := NewRandomHash(string(msg.Value))
 		FS.StoreFile(msg.Value, &owner)
+		FS.SetRepublished(fileID, true)
 		if MainDebug {
 			fmt.Println("Stored file: ", string(msg.Value))
 		}

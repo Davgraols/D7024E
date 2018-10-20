@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 )
 
 type Kademlia struct {
@@ -420,5 +421,20 @@ func (kademlia *Kademlia) Store(data []byte, owner *Contact) {
 
 	for _, contact := range closetsContacts {
 		Net.SendStoreMessage(data, &contact, owner)
+	}
+}
+
+func (kademlia *Kademlia) Pin(fileID *KademliaID) {
+	FS.PinFile(fileID)
+}
+
+func (kademlia *Kademlia) Unpin(fileID *KademliaID) {
+	FS.UnpinFile(fileID)
+	if KademliaDebug {
+		fmt.Println("Unpinning file. Starting eventual delete")
+	}
+	time.Sleep(OwnerRepublish)
+	if !FS.IsPinned(fileID) {
+		FS.DeleteFile(fileID)
 	}
 }
