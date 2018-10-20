@@ -38,14 +38,14 @@ var (
 func main() {
 
 	Mainrest()
-	/*
-		flag.Parse()
-		switch *mode {
-		case "server":
-			run(true)
-		case "client":
-			run(false)
-		}*/
+
+	flag.Parse()
+	switch *mode {
+	case "server":
+		run(true)
+	case "client":
+		run(false)
+	}
 }
 
 func run(bootstrap bool) {
