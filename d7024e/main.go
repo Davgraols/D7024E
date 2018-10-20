@@ -36,17 +36,20 @@ var (
 )
 
 func main() {
-	flag.Parse()
-	switch *mode {
-	case "server":
-		run(true)
-	case "client":
-		run(false)
-	}
+
+	Mainrest()
+	/*
+		flag.Parse()
+		switch *mode {
+		case "server":
+			run(true)
+		case "client":
+			run(false)
+		}*/
 }
 
 func run(bootstrap bool) {
-
+	Mainrest()
 	if !bootstrap {
 		me := NewContact(MyId, "kademliaNodes")
 		RT = NewRoutingTable(me)
