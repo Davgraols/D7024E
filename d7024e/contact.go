@@ -45,6 +45,16 @@ func (candidates *ContactCandidates) Append(contacts []Contact) {
 	candidates.contacts = append(candidates.contacts, contacts...)
 }
 
+func (candidates *ContactCandidates) RemoveContact(idToRemove *KademliaID) {
+	newContacts := []Contact{}
+	for _, contact := range candidates.contacts {
+		if !contact.ID.Equals(idToRemove) {
+			newContacts = append(newContacts, contact)
+		}
+	}
+	candidates.contacts = newContacts
+}
+
 // GetContacts returns the first count number of Contacts
 func (candidates *ContactCandidates) GetContacts(count int) []Contact {
 	if count > len(candidates.contacts) {
