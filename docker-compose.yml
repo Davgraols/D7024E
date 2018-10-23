@@ -3,6 +3,8 @@ services:
   kademliaBootstrap:
     image: kadlab:latest
     command: ["./d7024e"]
+    ports:
+      - "8080:8080" #map to port at server
     #networks:
     #    - kademlia_network
 
