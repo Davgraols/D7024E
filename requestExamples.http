@@ -1,0 +1,6 @@
+GET http://localhost:8080/file/asdasdasd HTTP/1.1
+content-type: application/json
+
+PATCH http://localhost:8080/file/asdasdasd HTTP/1.1
+content-type: application/json
+
