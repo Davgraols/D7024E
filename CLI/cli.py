@@ -1,6 +1,4 @@
 
-#import msvcrt as m
-#import codecs, csv
 import json
 import socket
 import sys
@@ -38,61 +36,44 @@ def savefile():
     print("this is jsonObj: ")
     print(jsonDict)#send this content to server
     f.close()
-    requests.post(url = "http://localhost/file/{id}", data = jsonObj)
+    resp = requests.post(url = "http://localhost/file/{id}", data = jsonObj)
+    print resp
 
 def deletefile():
     print "type in the name as a strin on the fileID you want to delete: "
     deleteID = input()
     jsonObj = json.dumps(deleteID)
-    r = requests.post(url = "localhost/file/{id}", data = jsonObj)
-    #try:
-        # Connect to server and send data
-        #sock.connect((HOST, PORT))
-        #r = requests.post(url = "localhost/file/{id}", data = jsonObj)
-        #sock.sendall(jsonObj)
-        # Receive data from the server and shut down
-        #received = sock.recv(1024)
-    #finally:
-        #sock.close()
+    resp = requests.delete(url = "localhost/file/{id}", data = jsonObj)
+    print resp
 
 def getfile():
     print "type in the name as a strin on the fileID you want to get: "
     deleteID = input()
     jsonObj = json.dumps(deleteID)
-    try:
-        # Connect to server and send data
-        sock.connect((HOST, PORT))
-        sock.sendall(jsonObj)
-        # Receive data from the server and shut down
-        received = sock.recv(1024)
-    finally:
-        sock.close()
+    resp = requests.get(url = "localhost/file/{id}", data = jsonObj)
+    print resp
 
 def pinfile():
+    headers = {
+    "Pintype": "pin",
+}
     print "type in the name as a strin on the fileID you want to pin: "
     deleteID = input()
     jsonObj = json.dumps(deleteID)
-    try:
-        # Connect to server and send data
-        sock.connect((HOST, PORT))
-        sock.sendall(jsonObj)
-        # Receive data from the server and shut down
-        received = sock.recv(1024)
-    finally:
-        sock.close()
+    resp = requests.patch(url = "localhost/file/{id}", data = jsonObj, headers = headers)
+    print resp
+
 
 def unpinfile():
+    headers = {
+    "Pintype": "unpin",
+    }
     print "type in the name as a strin on the fileID you want to unpin: "
     deleteID = input()
     jsonObj = json.dumps(deleteID)
-    try:
-        # Connect to server and send data
-        sock.connect((HOST, PORT))
-        sock.sendall(jsonObj)
-        # Receive data from the server and shut down
-        received = sock.recv(1024)
-    finally:
-        sock.close()
+    resp = requests.patch(url = "localhost/file/{id}", data = jsonObj, headers = headers)
+    print resp
+
 
 cli()
 
