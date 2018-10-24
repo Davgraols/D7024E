@@ -15,7 +15,7 @@ func Mainrest() {
 	router.HandleFunc("/file/{id}", GetFile).Methods("GET") //handle gefile
 	router.HandleFunc("/file", SaveFile).Methods("POST")    //handle savefile
 	//router.HandleFunc("/file/{id}", DeleteFile).Methods("DELETE") //handle deletefile
-	router.HandleFunc("/file/{id}", PinFile).Methods("PATCH") //handle pinfile
+	router.HandleFunc("/file/{id}", PinFile).Methods("PATCH") //handle pinfile and unpinfile
 	log.Fatal(http.ListenAndServe(":8080", router))
 
 }
