@@ -14,11 +14,11 @@ func Mainrest() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
-	router.HandleFunc("/file/{id}", GetFile).Methods("GET")       //handle gefile
-	router.HandleFunc("/file/{id}", SaveFile).Methods("POST")     //handle savefile
-	router.HandleFunc("/file/{id}", DeleteFile).Methods("DELETE") //handle deletefile
-	router.HandleFunc("/file/{id}", PinFile).Methods("POST")      //handle pinfile
-	router.HandleFunc("/file/{id}", UnpinFile).Methods("DELETE")  //handle unpinfile
+	router.HandleFunc("/file/get/{id}", GetFile).Methods("GET")         //handle gefile
+	router.HandleFunc("/file/save/{id}", SaveFile).Methods("POST")      //handle savefile
+	router.HandleFunc("/file/delete{id}", DeleteFile).Methods("DELETE") //handle deletefile
+	router.HandleFunc("/file/pin/{id}", PinFile).Methods("POST")        //handle pinfile
+	router.HandleFunc("/file/pin/{id}", UnpinFile).Methods("DELETE")    //handle unpinfile
 	log.Fatal(http.ListenAndServe(":8080", router))
 
 }
