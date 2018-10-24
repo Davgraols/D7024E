@@ -33,7 +33,7 @@ def savefile():
     headers = {
     "data": content,
     }
-    resp = requests.post(url = "http://localhost:8080/file/", data = headers)
+    resp = requests.post(url = "http://localhost:8080/file", data = headers)
     print resp
 
 def deletefile():

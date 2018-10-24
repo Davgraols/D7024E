@@ -42,8 +42,6 @@ var (
 
 func main() {
 
-	Mainrest()
-
 	flag.Parse()
 	switch *mode {
 	case "server":
@@ -54,7 +52,6 @@ func main() {
 }
 
 func run(bootstrap bool) {
-	Mainrest()
 	if !bootstrap {
 		me := NewContact(MyId, "kademliaNodes")
 		RT = NewRoutingTable(me)
@@ -104,10 +101,11 @@ func nodeInit() {
 }
 
 func bootstrapInit() {
-	time.Sleep(NodeRepublish)
-	KademliaObj.Store([]byte("hello asd"), &RT.me)
-	time.Sleep(NodeRepublish * 2)
-	KademliaObj.Unpin(NewRandomHash("hello asd"))
+	go Mainrest()
+	//time.Sleep(NodeRepublish)
+	//KademliaObj.Store([]byte("hello asd"), &RT.me)
+	//time.Sleep(NodeRepublish * 2)
+	//KademliaObj.Unpin(NewRandomHash("hello asd"))
 }
 
 func handlePingReq(msg RPC) {
