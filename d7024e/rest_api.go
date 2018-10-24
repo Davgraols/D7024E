@@ -49,11 +49,11 @@ type UnpinResponse struct {
 var files []File //byt från lista till stukt när bygger ihop med david
 
 func GetFile(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "im in GetFile")
 	params := mux.Vars(r)
 	response := GetFileResponse{
-		File:       params["file"],
+		File:       params["id"],
 		Successful: true,
+		Message:    "this is a message",
 	}
 	json.NewEncoder(w).Encode(response)
 }
@@ -62,8 +62,9 @@ func SaveFile(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "im in SaveFile")
 	params := mux.Vars(r)
 	response := StoreResponse{
-		FileID:     params["FileID"],
+		FileID:     params["id"],
 		Successful: true,
+		Message:    "David is awesome",
 	}
 	json.NewEncoder(w).Encode(response)
 }
