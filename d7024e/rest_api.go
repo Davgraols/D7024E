@@ -13,8 +13,8 @@ func Mainrest() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
-	router.HandleFunc("/file/{id}", GetFile).Methods("GET")   //handle gefile
-	router.HandleFunc("/file/{id}", SaveFile).Methods("POST") //handle savefile
+	router.HandleFunc("/file/{id}", GetFile).Methods("GET") //handle gefile
+	router.HandleFunc("/file", SaveFile).Methods("POST")    //handle savefile
 	//router.HandleFunc("/file/{id}", DeleteFile).Methods("DELETE") //handle deletefile
 	router.HandleFunc("/file/{id}", PinFile).Methods("POST")     //handle pinfile
 	router.HandleFunc("/file/{id}", UnpinFile).Methods("DELETE") //handle unpinfile
@@ -46,7 +46,9 @@ type UnpinResponse struct {
 	Message    string `json:"message"`
 }
 
-var files []File //byt från lista till stukt när bygger ihop med david
+type FileContent struct {
+	Data string `json:"data"`
+}
 
 func GetFile(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
@@ -59,12 +61,14 @@ func GetFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func SaveFile(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "im in SaveFile")
-	params := mux.Vars(r)
+
+	var file FileContent
+	_ = json.NewDecoder(r.Body).Decode(&file)
+
 	response := StoreResponse{
-		FileID:     params["id"],
+		FileID:     "A new id",
 		Successful: true,
-		Message:    "David is awesome",
+		Message:    "file: " + file.Data,
 	}
 	json.NewEncoder(w).Encode(response)
 }
