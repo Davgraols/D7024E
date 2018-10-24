@@ -11,16 +11,19 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 
 def cli():
-    print "1 = savefile. 2 = getfile, 3 = pinfile, 4 = unpinfile/delete"
-    command = input()
-    if command == 1:
-        savefile()
-    elif command == 2:
-        getfile()
-    elif command == 3:
-        pinfile()
-    elif command == 4:
-        unpinfile()
+    while True:
+        print "1 = savefile. 2 = getfile, 3 = pinfile, 4 = unpinfile/delete, 5 = exit"
+        command = input()
+        if command == 1:
+            savefile()
+        elif command == 2:
+            getfile()
+        elif command == 3:
+            pinfile()
+        elif command == 4:
+            unpinfile()
+        elif command == 5:
+            break
 
 def savefile():
     print "type in the name as a strin on the file you want to save: "
