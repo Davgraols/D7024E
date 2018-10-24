@@ -40,3 +40,35 @@ func testEquals(t *testing.T) {
 		t.Errorf("the Equals du not return True if the nodes are equal")
 	}
 }
+
+func testString(t *testing.T) {
+	node := NewRandomKademliaID()
+	nodestring := node.String()
+	var i interface{} = nodestring
+	_, ok := i.(string)
+	if ok == false {
+		t.Errorf("the String function dose not konvert kadmliaID to string")
+	}
+}
+
+func testToBytes(t *testing.T) {
+	node := NewRandomKademliaID()
+	nodebyte := node.ToBytes()
+	var i interface{} = nodebyte
+	_, ok := i.([]byte)
+	if ok == false {
+		t.Errorf("the ToBytes function dose not konvert kadmliaID to byte")
+	}
+
+}
+
+func testIdFromBytes(t *testing.T) {
+	node := NewRandomKademliaID()
+	nodebyte := node.ToBytes()
+	nodes := IdFromBytes(nodebyte)
+	var i interface{} = nodes
+	_, ok := i.(*KademliaID)
+	if ok == false {
+		t.Errorf("the ToBytes function dose not konvert kadmliaID to byte")
+	}
+}
