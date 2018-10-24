@@ -11,17 +11,15 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 
 def cli():
-    print "1 = savefile. 2 = deletefile, 3 = getfile, 4 = pinfile, 5 = unpinfile"
+    print "1 = savefile. 2 = getfile, 3 = pinfile, 4 = unpinfile/delete"
     command = input()
     if command == 1:
         savefile()
     elif command == 2:
-        deletefile()
-    elif command == 3:
         getfile()
-    elif command == 4:
+    elif command == 3:
         pinfile()
-    elif command == 5:
+    elif command == 4:
         unpinfile()
 
 def savefile():
@@ -29,18 +27,21 @@ def savefile():
     filename = input()
     f = open(filename, 'r')
     content = f.read()
+    #jsonObj = json.dumps(content)
     f.close()
     headers = {
     "data": content,
     }
-    resp = requests.post(url = "http://localhost:8080/file/", data = headers)
-    print resp
+    jsonObj = json.dumps(headers)
+    print jsonObj
+    resp = requests.post(url = "http://localhost:8080/file", data = jsonObj)
+    print resp.text
 
 def deletefile():
     print "type in the name as a strin on the fileID you want to delete: "
     deleteID = input()
     resp = requests.delete(url = "http://localhost:8080/file/"+deleteID)
-    print resp
+    print resp.text
 
 def getfile():
     print "type in the name as a strin on the fileID you want to get: "
@@ -54,9 +55,9 @@ def pinfile():
 }
     print "type in the name as a strin on the fileID you want to pin: "
     deleteID = input()
-    jsonObj = json.dumps(deleteID)
-    resp = requests.patch(url = "http://localhost:8080/file/"+deleteID, data = headers)
-    print resp
+    jsonObj = json.dumps(headers)
+    resp = requests.patch(url = "http://localhost:8080/file/"+deleteID, data = jsonObj)
+    print resp.text
 
 
 def unpinfile():
@@ -65,9 +66,9 @@ def unpinfile():
     }
     print "type in the name as a strin on the fileID you want to unpin: "
     deleteID = input()
-    jsonObj = json.dumps(deleteID)
-    resp = requests.patch(url = "http://localhost:8080/file/"+deleteID, data = headers)
-    print resp
+    jsonObj = json.dumps(headers)
+    resp = requests.patch(url = "http://localhost:8080/file/"+deleteID, data = jsonObj)
+    print resp.text
 
 
 cli()

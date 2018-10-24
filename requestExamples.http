@@ -1,11 +1,10 @@
-GET http://localhost:8080/file/asdasdasd HTTP/1.1
-content-type: application/json
-
-###
-
 POST http://localhost:8080/file HTTP/1.1
 content-type: application/json
 
-{
-    "data": "asdASDASD"
-}
+GET http://localhost:8080/file/asdasdasd HTTP/1.1
+content-type: application/json
+
+PATCH http://localhost:8080/file/asdasdasd HTTP/1.1
+content-type: application/json
+
+
