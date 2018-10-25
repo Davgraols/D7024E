@@ -27,9 +27,9 @@ func testNewRandomHash(t *testing.T) {
 	testone := NewRandomHash("1337")
 	testtwo := NewRandomHash("1337")
 
-	if testone == testtwo {
+	if testone.Equals(testtwo) {
 
-		t.Errorf("error, generate two of the same hash. ")
+		t.Errorf("error, not generate two of the same hash. ")
 	}
 }
 
