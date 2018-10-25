@@ -8,8 +8,7 @@ func testNewRandomKademliaID(t *testing.T) {
 	testone := NewRandomKademliaID()
 	testtwo := NewRandomKademliaID()
 
-	if testone == testtwo {
-
+	if testone.Equals(testtwo) {
 		t.Errorf("error, generate two of the same ID. ")
 	}
 }
